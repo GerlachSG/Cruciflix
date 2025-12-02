@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Assistir vídeo - Cruciflix">
+    <title>Player - Cruciflix</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="../styles/main.css">
+    <link rel="stylesheet" href="../styles/player.css">
+    <link rel="stylesheet" href="../styles/responsive.css">
+</head>
+
+<body>
+
+    <!-- Header Navigation -->
+    <header class="main-header">
+        <div class="container">
+            <nav class="nav-container">
+                <div class="logo" onclick="window.location.href='dashboard.html'" style="cursor: pointer;">
+                    Cruci<span class="accent">flix</span>
+                </div>
+
+                <div class="user-menu">
+                    <div class="user-menu-btn" id="user-menu-btn">
+                        <div class="user-avatar" id="user-avatar">U</div>
+                    </div>
+                    <div class="user-menu-dropdown" id="user-menu-dropdown">
+                        <a href="profile.html">Meu Perfil</a>
+                        <a href="dashboard.html">Voltar ao Catálogo</a>
+                        <a href="#" onclick="handleLogout(event)">Sair</a>
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main class="player-page">
+        <div class="player-container">
+
+            <!-- Video Player -->
+            <div class="video-player-wrapper">
+                <video id="video-player" class="video-player"></video>
+
+                <div class="player-controls">
+                    <div class="progress-container" id="progress-container">
+                        <div class="progress-buffer" id="progress-buffer"></div>
+                        <div class="progress-bar" id="progress-bar">
+                            <div class="progress-handle"></div>
+                        </div>
+                    </div>
+
+                    <div class="controls-row">
+                        <div class="controls-left">
+                            <button class="control-btn play-pause-btn" id="play-pause-btn"
+                                onclick="window.playerModule.togglePlayPause()">
+                                <svg id="play-icon" viewBox="0 0 24 24">
+                                    <path d="M8 5v14l11-7z" />
+                                </svg>
+                                <svg id="pause-icon" style="display:none;" viewBox="0 0 24 24">
+                                    <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                                </svg>
+                            </button>
+
+                            <div class="volume-control">
+                                <button class="control-btn" id="mute-btn" onclick="window.playerModule.toggleMute()">
+                                    <svg id="volume-icon" viewBox="0 0 24 24">
+                                        <path
+                                            d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" />
+                                    </svg>
+                                    <svg id="mute-icon" style="display:none;" viewBox="0 0 24 24">
+                                        <path
+                                            d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" />
+                                    </svg>
+                                </button>
+                                <div class="volume-slider" id="volume-slider">
+                                    <div class="volume-level" id="volume-level" style="width: 100%;"></div>
+                                </div>
+                            </div>
+
+                            <span class="time-display">
+                                <span id="current-time">0:00</span> / <span id="duration">0:00</span>
+                            </span>
+                        </div>
+
+                        <div class="controls-right">
+                            <button class="control-btn" onclick="window.playerModule.toggleFullscreen()">
+                                <svg viewBox="0 0 24 24">
+                                    <path
+                                        d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Video Metadata -->
+            <div class="video-metadata">
+                <h1 class="video-metadata-title" id="video-title">Carregando...</h1>
+                <div class="video-metadata-info">
+                    <span id="video-views">0 visualizações</span>
+                </div>
+                <p class="video-metadata-description" id="video-description"></p>
+                <div class="video-metadata-tags" id="video-tags"></div>
+            </div>
+
+            <!-- Comments Section -->
+            <div class="comments-section">
+                <h3 class="comments-title">Comentários</h3>
+
+                <form class="comment-form" id="comment-form" onsubmit="handleCommentSubmit(event)">
+                    <textarea class="comment-input" id="comment-input"
+                        placeholder="Adicione um comentário... (todos os comentários passam por moderação)"
+                        required></textarea>
+                    <button type="submit" class="btn btn-primary comment-submit">Enviar Comentário</button>
+                </form>
+
+                <div class="comments-list" id="comments-list">
+                    <!-- Comments loaded dynamically -->
+                </div>
+            </div>
+
+            <!-- Related Videos -->
+            <div class="related-videos">
+                <h3 class="related-videos-title">Vídeos Relacionados</h3>
+                <div class="related-videos-grid" id="related-videos-grid">
+                    <!-- Related videos loaded dynamically -->
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- HLS.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.12"></script>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+
+    <!-- App Scripts -->
+    <script src="../scripts/firebase-config.js"></script>
+    <script src="../scripts/auth.js"></script>
+    <script src="../scripts/firestore.js"></script>
+    <script src="../scripts/player.js"></script>
+    <script src="../scripts/ui.js"></script>
+
+    <script>
+        let currentVideoId = null;
+        let currentVideoData = null;
+
+        // Protect page and get video ID from URL
+        window.authModule.onAuthStateChanged(async (authState) => {
+            if (!authState.loggedIn) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // Update user avatar
+            const user = authState.user;
+            const initials = user.displayName ? user.displayName.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase();
+            document.getElementById('user-avatar').textContent = initials;
+
+            // Get video ID from URL parameter
+            currentVideoId = window.uiModule.getUrlParameter('v');
+
+            if (!currentVideoId) {
+                window.uiModule.showToast('Vídeo não encontrado', 'error');
+                setTimeout(() => window.location.href = 'dashboard.html', 2000);
+                return;
+            }
+
+            // Load video
+            await loadVideo(currentVideoId);
+            await loadComments(currentVideoId);
+            await loadRelatedVideos();
+        });
+
+        // Load video data and initialize player
+        async function loadVideo(videoId) {
+            window.uiModule.showLoading();
+
+            currentVideoData = await window.firestoreModule.getVideoById(videoId);
+
+            if (!currentVideoData) {
+                window.uiModule.hideLoading();
+                window.uiModule.showToast('Vídeo não encontrado', 'error');
+                setTimeout(() => window.location.href = 'dashboard.html', 2000);
+                return;
+            }
+
+            // Update metadata
+            document.getElementById('video-title').textContent = currentVideoData.title;
+            document.getElementById('video-description').textContent = currentVideoData.description;
+            document.getElementById('video-views').textContent = `${currentVideoData.viewCount || 0} visualizações`;
+
+            // Update tags
+            const tagsContainer = document.getElementById('video-tags');
+            tagsContainer.innerHTML = '';
+            currentVideoData.tags.forEach(tag => {
+                const tagSpan = document.createElement('span');
+                tagSpan.className = 'tag';
+                tagSpan.textContent = tag;
+                tagsContainer.appendChild(tagSpan);
+            });
+
+            // Initialize player
+            window.playerModule.initPlayer('video-player', currentVideoData.hlsUrl, videoId);
+            window.playerModule.setupKeyboardControls();
+
+            // Setup custom controls
+            setupCustomControls();
+
+            window.uiModule.hideLoading();
+        }
+
+        // Setup custom player controls
+        function setupCustomControls() {
+            const video = document.getElementById('video-player');
+            const playPauseBtn = document.getElementById('play-pause-btn');
+            const playIcon = document.getElementById('play-icon');
+            const pauseIcon = document.getElementById('pause-icon');
+            const progressBar = document.getElementById('progress-bar');
+            const progressContainer = document.getElementById('progress-container');
+            const currentTimeEl = document.getElementById('current-time');
+            const durationEl = document.getElementById('duration');
+            const volumeSlider = document.getElementById('volume-slider');
+            const volumeLevel = document.getElementById('volume-level');
+
+            // Play/Pause visual update
+            video.addEventListener('play', () => {
+                playIcon.style.display = 'none';
+                pauseIcon.style.display = 'block';
+            });
+
+            video.addEventListener('pause', () => {
+                playIcon.style.display = 'block';
+                pauseIcon.style.display = 'none';
+            });
+
+            // Time update
+            video.addEventListener('timeupdate', () => {
+                const progress = (video.currentTime / video.duration) * 100;
+                progressBar.style.width = progress + '%';
+                currentTimeEl.textContent = window.uiModule.formatTime(video.currentTime);
+            });
+
+            // Duration update
+            video.addEventListener('loadedmetadata', () => {
+                durationEl.textContent = window.uiModule.formatTime(video.duration);
+            });
+
+            // Progress bar seek
+            progressContainer.addEventListener('click', (e) => {
+                const rect = progressContainer.getBoundingClientRect();
+                const pos = (e.clientX - rect.left) / rect.width;
+                window.playerModule.seekTo(pos * video.duration);
+            });
+
+            // Volume slider
+            volumeSlider.addEventListener('click', (e) => {
+                const rect = volumeSlider.getBoundingClientRect();
+                const pos = (e.clientX - rect.left) / rect.width;
+                window.playerModule.setVolume(pos);
+                volumeLevel.style.width = (pos * 100) + '%';
+            });
+        }
+
+        // Load comments
+        async function loadComments(videoId) {
+            const comments = await window.firestoreModule.getComments(videoId);
+            const commentsList = document.getElementById('comments-list');
+            commentsList.innerHTML = '';
+
+            if (comments.length === 0) {
+                commentsList.innerHTML = '<p class="no-results">Nenhum comentário ainda. Seja o primeiro a comentar!</p>';
+                return;
+            }
+
+            comments.forEach(comment => {
+                const commentEl = document.createElement('div');
+                commentEl.className = 'comment-item';
+                commentEl.innerHTML = `
+        <div class="comment-header">
+          <span class="comment-author">${comment.userName}</span>
+          <span class="comment-date">${new Date(comment.createdAt.toDate()).toLocaleDateString('pt-BR')}</span>
+        </div>
+        <p class="comment-content">${comment.content}</p>
+      `;
+                commentsList.appendChild(commentEl);
+            });
+        }
+
+        // Handle comment submission
+        async function handleCommentSubmit(event) {
+            event.preventDefault();
+
+            const commentInput = document.getElementById('comment-input');
+            const content = commentInput.value.trim();
+
+            if (!content) return;
+
+            const result = await window.firestoreModule.addComment(currentVideoId, content);
+
+            if (result.success) {
+                window.uiModule.showToast('Comentário enviado! Aguarde moderação.', 'success');
+                commentInput.value = '';
+
+                // Show pending comment
+                const commentsList = document.getElementById('comments-list');
+                const pendingComment = document.createElement('div');
+                pendingComment.className = 'comment-item comment-pending';
+                pendingComment.innerHTML = `
+        <div class="comment-header">
+          <span class="comment-author">${window.authModule.getCurrentUser().displayName}</span>
+          <span class="pending-badge">Pendente</span>
+        </div>
+        <p class="comment-content">${content}</p>
+      `;
+                commentsList.insertBefore(pendingComment, commentsList.firstChild);
+            } else {
+                window.uiModule.showToast('Erro ao enviar comentário', 'error');
+            }
+        }
+
+        // Load related videos
+        async function loadRelatedVideos() {
+            if (!currentVideoData || !currentVideoData.tags || currentVideoData.tags.length === 0) {
+                return;
+            }
+
+            // Get videos with at least one matching tag
+            const allVideos = await window.firestoreModule.getVideosByTags(currentVideoData.tags.slice(0, 2));
+
+            // Filter out current video and limit to 6
+            const related = allVideos
+                .filter(v => v.id !== currentVideoId)
+                .slice(0, 6);
+
+            const relatedGrid = document.getElementById('related-videos-grid');
+            relatedGrid.innerHTML = '';
+
+            related.forEach(video => {
+                const card = window.uiModule.createVideoCard(video);
+                relatedGrid.appendChild(card);
+            });
+        }
+
+        // Handle logout
+        async function handleLogout(event) {
+            event.preventDefault();
+            const result = await window.authModule.logoutUser();
+            if (result.success) {
+                window.location.href = 'index.html';
+            }
+        }
+    </script>
+
+</body>
+
+</html>

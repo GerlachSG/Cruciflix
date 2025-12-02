@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Painel Administrativo - Cruciflix">
+    <title>Admin - Cruciflix</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="../styles/main.css">
+    <link rel="stylesheet" href="../styles/admin.css">
+    <link rel="stylesheet" href="../styles/responsive.css">
+</head>
+
+<body>
+
+    <!-- Header Navigation -->
+    <header class="main-header">
+        <div class="container">
+            <nav class="nav-container">
+                <div class="logo" onclick="window.location.href='dashboard.html'" style="cursor: pointer;">
+                    Cruci<span class="accent">flix</span> <span
+                        style="font-size: 0.6em; color: var(--color-secondary);">Admin</span>
+                </div>
+
+                <div class="user-menu">
+                    <div class="user-menu-btn" id="user-menu-btn">
+                        <div class="user-avatar" id="user-avatar">A</div>
+                    </div>
+                    <div class="user-menu-dropdown" id="user-menu-dropdown">
+                        <a href="dashboard.html">Voltar ao Catálogo</a>
+                        <a href="#" onclick="handleLogout(event)">Sair</a>
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <div class="admin-page">
+        <div class="admin-container">
+            <section id="section-videos" class="admin-content-section" style="display:none;">
+                <div class="admin-header">
+                    <h1 class="admin-title">Gerenciar Vídeos</h1>
+                    <p class="admin-description">Adicionar, editar e remover vídeos</p>
+                </div>
+
+                <!-- Add Video Form -->
+                <div class="admin-section">
+                    <div class="admin-section-header">
+                        <h2 class="admin-section-title">Adicionar Novo Vídeo</h2>
+                    </div>
+
+                    <form id="add-video-form" onsubmit="window.adminModule.handleAddVideoForm(event)">
+                        <div class="admin-form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Título *</label>
+                                <input type="text" name="title" class="form-input" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">URL do HLS (.m3u8) *</label>
+                                <input type="url" name="hlsUrl" class="form-input" placeholder="https://..." required>
+                            </div>
+
+                            <div class="form-group admin-form-full">
+                                <label class="form-label">Descrição *</label>
+                                <textarea name="description" class="form-textarea" rows="3" required></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Tags (separadas por vírgula) *</label>
+                                <input type="text" name="tags" class="form-input" placeholder="Filme, Medieval, Santo"
+                                    required>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">URL da Miniatura</label>
+                                <input type="url" name="thumbnailUrl" class="form-input" placeholder="https://...">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Duração (segundos)</label>
+                                <input type="number" name="duration" class="form-input" value="0">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-checkbox">
+                                    <input type="checkbox" name="isKidsSafe">
+                                    <span>Seguro para crianças</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="admin-form-actions">
+                            <button type="submit" class="btn btn-primary">Adicionar Vídeo</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Videos List -->
+                <div class="admin-section">
+                    <div class="admin-section-header">
+                        <h2 class="admin-section-title">Vídeos Cadastrados</h2>
+                    </div>
+
+                    <div class="admin-table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Título</th>
+                                    <th>Tags</th>
+                                    <th>Visualizações</th>
+                                    <th>Kids</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="videos-table-body">
+                                <!-- Rows loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Users Section -->
+            <section id="section-users" class="admin-content-section" style="display:none;">
+                <div class="admin-header">
+                    <h1 class="admin-title">Gerenciar Usuários</h1>
+                    <p class="admin-description">Visualizar e gerenciar contas de usuário</p>
+                </div>
+
+                <div class="admin-section">
+                    <div class="admin-table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Data de Criação</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body">
+                                <!-- Rows loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Comments Section -->
+            <section id="section-comments" class="admin-content-section" style="display:none;">
+                <div class="admin-header">
+                    <h1 class="admin-title">Moderar Comentários</h1>
+                    <p class="admin-description">Aprovar ou remover comentários</p>
+                </div>
+
+                <div class="admin-section">
+                    <div class="admin-table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Usuário</th>
+                                    <th>Comentário</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="comments-table-body">
+                                <!-- Rows loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            </main>
+
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+
+    <!-- App Scripts -->
+    <script src="../scripts/firebase-config.js"></script>
+    <script src="../scripts/auth.js"></script>
+    <script src="../scripts/firestore.js"></script>
+    <script src="../scripts/admin.js"></script>
+    <script src="../scripts/ui.js"></script>
+
+    <script>
+        // Protect page - require admin access
+        window.authModule.onAuthStateChanged(async (authState) => {
+            if (!authState.loggedIn) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            if (!authState.isAdmin) {
+                window.uiModule.showToast('Acesso negado. Apenas administradores.', 'error');
+                setTimeout(() => window.location.href = 'dashboard.html', 2000);
+                return;
+            }
+
+            // Update user avatar
+            const user = authState.user;
+            const initials = user.displayName ? user.displayName.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase();
+            document.getElementById('user-avatar').textContent = initials;
+
+            // Load dashboard data
+            loadDashboard();
+        });
+
+        // Load dashboard
+        async function loadDashboard() {
+            await window.adminModule.loadAnalytics();
+            await window.adminModule.loadAdminVideos();
+            await window.adminModule.loadUsers();
+            await window.adminModule.loadCommentsForModeration();
+        }
+
+        // Show section
+        function showSection(section) {
+            // Hide all sections
+            document.querySelectorAll('.admin-content-section').forEach(s => {
+                s.style.display = 'none';
+            });
+
+            // Remove active class from all nav links
+            document.querySelectorAll('.admin-nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+
+            // Show selected section
+            document.getElementById('section-' + section).style.display = 'block';
+
+            // Add active class to clicked link
+            event.target.closest('.admin-nav-link').classList.add('active');
+        }
+
+        // Make admin functions available globally
+        window.editVideo = window.adminModule.editVideo;
+        window.confirmDeleteVideo = (id, title) => {
+            if (confirm(`Tem certeza que deseja excluir "${title}"?`)) {
+                window.adminModule.deleteVideo(id);
+            }
+        };
+
+        window.toggleUserRole = window.adminModule.toggleUserRole;
+        window.confirmDeleteUser = (id, email) => {
+            if (confirm(`Tem certeza que deseja excluir o usuário "${email}"?`)) {
+                window.adminModule.deleteUser(id);
+            }
+        };
+
+        window.approveComment = window.adminModule.approveComment;
+        window.confirmDeleteComment = (id) => {
+            if (confirm('Tem certeza que deseja excluir este comentário?')) {
+                window.adminModule.deleteCommentAdmin(id);
+            }
+        };
+
+        // Handle logout
+        async function handleLogout(event) {
+            event.preventDefault();
+            const result = await window.authModule.logoutUser();
+            if (result.success) {
+                window.location.href = 'index.html';
+            }
+        }
+    </script>
+
+</body>
+
+</html>

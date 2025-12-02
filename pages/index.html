@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Cruciflix - Plataforma de Streaming Católica">
+    <title>Cruciflix - Entrar ou Cadastrar</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="../styles/main.css">
+    <link rel="stylesheet" href="../styles/responsive.css">
+</head>
+
+<body class="auth-body">
+
+    <div class="auth-container" id="auth-container">
+
+        <!-- Sign Up Container (Left) -->
+        <div class="form-container sign-up-container">
+            <form id="register-form" class="form-wrapper" onsubmit="handleRegister(event)">
+                <h1 class="auth-logo">Cruci<span>flix</span></h1>
+                <h1>Criar Conta</h1>
+                <div class="auth-social-container">
+                    <!-- Social icons removed -->
+                </div>
+                <span class="text-muted">ou use seu email para registro</span>
+                <div class="form-group">
+                    <input type="text" id="register-name" placeholder="Nome" class="form-input" required />
+                </div>
+                <div class="form-group">
+                    <input type="email" id="register-email" placeholder="Email" class="form-input" required />
+                </div>
+                <div class="form-group">
+                    <input type="password" id="register-password" placeholder="Senha" class="form-input" required
+                        minlength="6" />
+                </div>
+                <div class="form-group">
+                    <input type="password" id="register-password-confirm" placeholder="Confirmar Senha"
+                        class="form-input" required minlength="6" />
+                </div>
+                <button type="submit" class="btn btn-primary" style="margin-top: 1rem; width: 100%;">Cadastrar</button>
+            </form>
+        </div>
+
+        <!-- Sign In Container (Right) -->
+        <div class="form-container sign-in-container">
+            <form id="login-form" class="form-wrapper" onsubmit="handleLogin(event)">
+                <h1 class="auth-logo">Cruci<span>flix</span></h1>
+                <h1>Entrar</h1>
+                <div class="auth-social-container">
+                    <!-- Social icons removed -->
+                </div>
+                <span class="text-muted">ou use sua conta</span>
+                <div class="form-group">
+                    <input type="email" id="login-email" placeholder="Email" class="form-input" required />
+                </div>
+                <div class="form-group">
+                    <input type="password" id="login-password" placeholder="Senha" class="form-input" required />
+                </div>
+                <a href="#" onclick="handleForgotPassword(event)"
+                    style="margin: 1rem 0; font-size: 0.9rem; color: var(--color-text-muted); display: block;">Esqueceu
+                    sua senha?</a>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Entrar</button>
+            </form>
+        </div>
+
+        <!-- Overlay Container (Sliding) -->
+        <div class="overlay-container">
+            <div class="overlay">
+                <div class="overlay-panel overlay-left">
+                    <h1>Bem-vindo de volta!</h1>
+                    <p>Para se manter conectado conosco, faça login com suas informações pessoais</p>
+                    <button class="btn btn-ghost" id="signIn"
+                        style="border-color: white; color: white; margin-top: 1rem;">Entrar</button>
+                </div>
+                <div class="overlay-panel overlay-right">
+                    <h1>Olá, Amigo!</h1>
+                    <p>Insira seus dados pessoais e comece sua jornada de fé conosco</p>
+                    <button class="btn btn-ghost" id="signUp"
+                        style="border-color: white; color: white; margin-top: 1rem;">Cadastrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+
+    <!-- App Scripts -->
+    <script src="../scripts/firebase-config.js"></script>
+    <script src="../scripts/auth.js"></script>
+    <script src="../scripts/ui.js"></script>
+
+    <script>
+        // Check if user is already logged in
+        window.authModule.onAuthStateChanged((authState) => {
+            if (authState.loggedIn) {
+                window.location.href = 'dashboard.html';
+            }
+        });
+
+        // Sliding Animation Logic
+        const signUpButton = document.getElementById('signUp');
+        const signInButton = document.getElementById('signIn');
+        const container = document.getElementById('auth-container');
+
+        signUpButton.addEventListener('click', () => {
+            container.classList.add("right-panel-active");
+        });
+
+        signInButton.addEventListener('click', () => {
+            container.classList.remove("right-panel-active");
+        });
+
+        // Handle login
+        async function handleLogin(event) {
+            event.preventDefault();
+
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            window.uiModule.showLoading();
+
+            const result = await window.authModule.loginUser(email, password);
+
+            window.uiModule.hideLoading();
+
+            if (result.success) {
+                window.uiModule.showToast('Login realizado com sucesso!', 'success');
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 1000);
+            } else {
+                window.uiModule.showToast('Erro: ' + result.error, 'error');
+            }
+        }
+
+        // Handle registration
+        async function handleRegister(event) {
+            event.preventDefault();
+
+            const name = document.getElementById('register-name').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            const passwordConfirm = document.getElementById('register-password-confirm').value;
+
+            if (password !== passwordConfirm) {
+                window.uiModule.showToast('As senhas não coincidem', 'error');
+                return;
+            }
+
+            window.uiModule.showLoading();
+
+            const result = await window.authModule.registerUser(email, password, name);
+
+            window.uiModule.hideLoading();
+
+            if (result.success) {
+                window.uiModule.showToast('Conta criada com sucesso!', 'success');
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 1000);
+            } else {
+                window.uiModule.showToast('Erro: ' + result.error, 'error');
+            }
+        }
+
+        // Handle forgot password
+        async function handleForgotPassword(event) {
+            event.preventDefault();
+            const email = prompt('Digite seu email para recuperação de senha:');
+            if (!email) return;
+
+            if (!window.uiModule.isValidEmail(email)) {
+                window.uiModule.showToast('Email inválido', 'error');
+                return;
+            }
+
+            window.uiModule.showLoading();
+            const result = await window.authModule.resetPassword(email);
+            window.uiModule.hideLoading();
+
+            if (result.success) {
+                window.uiModule.showToast('Email de recuperação enviado!', 'success');
+            } else {
+                window.uiModule.showToast('Erro: ' + result.error, 'error');
+            }
+        }
+    </script>
+
+</body>
+
+</html>
