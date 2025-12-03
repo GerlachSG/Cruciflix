@@ -1,6 +1,17 @@
-firestore.rules
-node_modules/
-.DS_Store
-.env
-.gemini/
+# Arquivos sensíveis/internos
 INSTRUCTIONS.md
+firestore.rules
+
+# Dependências
+node_modules/
+
+# Logs
+*.log
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
