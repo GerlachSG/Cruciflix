@@ -10,9 +10,7 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;700;800&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
 
     <!-- Stylesheets -->
     <link rel="stylesheet" href="../styles/main.css">
@@ -27,8 +25,7 @@
         <div class="container">
             <nav class="nav-container">
                 <div class="logo" onclick="window.location.href='dashboard.html'" style="cursor: pointer;">
-                    Cruci<span class="accent">flix</span> <span
-                        style="font-size: 0.6em; color: var(--color-secondary);">Admin</span>
+                    Cruci<span class="accent">flix</span> <span style="font-size: 0.6em; color: var(--color-secondary);">Admin</span>
                 </div>
 
                 <div class="user-menu">
@@ -36,7 +33,8 @@
                         <div class="user-avatar" id="user-avatar">A</div>
                     </div>
                     <div class="user-menu-dropdown" id="user-menu-dropdown">
-                        <a href="dashboard.html">Voltar ao Catálogo</a>
+                        <a href="dashboard.html">Voltar ao Dashboard</a>
+                        <a href="catalogo.html">Catálogo</a>
                         <a href="#" onclick="handleLogout(event)">Sair</a>
                     </div>
                 </div>
@@ -45,8 +43,35 @@
     </header>
 
     <div class="admin-page">
+        <!-- Sidebar Navigation -->
+        <aside class="admin-sidebar">
+            <nav class="admin-nav">
+                <a href="#" class="admin-nav-link active" onclick="showSection('videos', event)">
+                    <span class="nav-icon">🎬</span>
+                    <span>Vídeos</span>
+                </a>
+                <a href="#" class="admin-nav-link" onclick="showSection('upload', event)">
+                    <span class="nav-icon">📤</span>
+                    <span>Upload HLS</span>
+                </a>
+                <a href="#" class="admin-nav-link" onclick="showSection('users', event)">
+                    <span class="nav-icon">👥</span>
+                    <span>Usuários</span>
+                </a>
+                <a href="#" class="admin-nav-link" onclick="showSection('comments', event)">
+                    <span class="nav-icon">💬</span>
+                    <span>Comentários</span>
+                </a>
+                <a href="#" class="admin-nav-link" onclick="showSection('analytics', event)">
+                    <span class="nav-icon">📊</span>
+                    <span>Analytics</span>
+                </a>
+            </nav>
+        </aside>
+
         <div class="admin-container">
-            <section id="section-videos" class="admin-content-section" style="display:none;">
+            <!-- Videos Section -->
+            <section id="section-videos" class="admin-content-section">
                 <div class="admin-header">
                     <h1 class="admin-title">Gerenciar Vídeos</h1>
                     <p class="admin-description">Adicionar, editar e remover vídeos</p>
@@ -77,8 +102,7 @@
 
                             <div class="form-group">
                                 <label class="form-label">Tags (separadas por vírgula) *</label>
-                                <input type="text" name="tags" class="form-input" placeholder="Filme, Medieval, Santo"
-                                    required>
+                                <input type="text" name="tags" class="form-input" placeholder="Filme, Medieval, Santo" required>
                             </div>
 
                             <div class="form-group">
@@ -127,6 +151,114 @@
                             </tbody>
                         </table>
                     </div>
+                </div>
+            </section>
+
+            <!-- Upload HLS Video Section -->
+            <section id="section-upload" class="admin-content-section" style="display:none;">
+                <div class="admin-header">
+                    <h1 class="admin-title">Upload de Vídeo HLS</h1>
+                    <p class="admin-description">Faça upload e processe vídeos para streaming HLS</p>
+                </div>
+
+                <div class="admin-section">
+                    <div class="admin-section-header">
+                        <h2 class="admin-section-title">Enviar e Processar Vídeo</h2>
+                    </div>
+
+                    <form id="upload-hls-form" onsubmit="window.adminModule.handleUploadForm(event)">
+                        <div class="admin-form-grid">
+                            <!-- Video File -->
+                            <div class="form-group admin-form-full">
+                                <label class="form-label">Arquivo de Vídeo *</label>
+                                <input type="file" name="videoFile" class="form-input" accept="video/*" required onchange="window.adminModule.handleFileSelect(event)">
+                                <small class="form-hint">Formato aceito: MP4, MOV, AVI, MKV (Max: 2GB)</small>
+                            </div>
+
+                            <!-- Video Info -->
+                            <div class="form-group">
+                                <label class="form-label">Título *</label>
+                                <input type="text" name="title" class="form-input" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Tags (separadas por vírgula) *</label>
+                                <input type="text" name="tags" class="form-input" placeholder="Filme, Medieval, Santo" required>
+                            </div>
+
+                            <div class="form-group admin-form-full">
+                                <label class="form-label">Descrição *</label>
+                                <textarea name="description" class="form-textarea" rows="3" required></textarea>
+                            </div>
+
+                            <!-- Processing Settings -->
+                            <div class="form-group">
+                                <label class="form-label">Qualidade de Codificação</label>
+                                <select name="quality" class="form-input">
+                                    <option value="fast">Rápida (Lower Quality)</option>
+                                    <option value="medium" selected>Média (Balanced)</option>
+                                    <option value="slow">Alta (Better Quality)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Resoluções</label>
+                                <div class="checkbox-group">
+                                    <label class="form-checkbox">
+                                        <input type="checkbox" name="res_360p" checked>
+                                        <span>360p</span>
+                                    </label>
+                                    <label class="form-checkbox">
+                                        <input type="checkbox" name="res_480p" checked>
+                                        <span>480p</span>
+                                    </label>
+                                    <label class="form-checkbox">
+                                        <input type="checkbox" name="res_720p" checked>
+                                        <span>720p</span>
+                                    </label>
+                                    <label class="form-checkbox">
+                                        <input type="checkbox" name="res_1080p">
+                                        <span>1080p</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Kids Safe & Thumbnail -->
+                            <div class="form-group">
+                                <label class="form-label">URL da Miniatura (opcional)</label>
+                                <input type="url" name="thumbnailUrl" class="form-input" placeholder="https://...">
+                                <small class="form-hint">Deixe em branco para gerar automaticamente</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-checkbox">
+                                    <input type="checkbox" name="isKidsSafe">
+                                    <span>Seguro para crianças</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Progress Bar -->
+                        <div id="upload-progress-container" style="display:none; margin-top: 20px;">
+                            <div class="progress-info">
+                                <span id="progress-status">Preparando...</span>
+                                <span id="progress-percentage">0%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div id="progress-fill" class="progress-fill"></div>
+                            </div>
+                            <small id="progress-details" class="form-hint"></small>
+                        </div>
+
+                        <div class="admin-form-actions">
+                            <button type="submit" class="btn btn-primary" id="upload-submit-btn">
+                                Processar e Enviar Vídeo
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="upload-cancel-btn" style="display:none;" onclick="window.adminModule.cancelUpload()">
+                                Cancelar Upload
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </section>
 
@@ -183,10 +315,44 @@
                 </div>
             </section>
 
-            </main>
+            <!-- Analytics Section -->
+            <section id="section-analytics" class="admin-content-section" style="display:none;">
+                <div class="admin-header">
+                    <h1 class="admin-title">Analytics</h1>
+                    <p class="admin-description">Estatísticas e métricas do sistema</p>
+                </div>
+
+                <div class="admin-section">
+                    <div class="analytics-grid">
+                        <div class="analytics-card">
+                            <div class="analytics-icon">🎬</div>
+                            <div class="analytics-value" id="analytics-videos">0</div>
+                            <div class="analytics-label">Vídeos</div>
+                        </div>
+                        <div class="analytics-card">
+                            <div class="analytics-icon">👥</div>
+                            <div class="analytics-value" id="analytics-users">0</div>
+                            <div class="analytics-label">Usuários</div>
+                        </div>
+                        <div class="analytics-card">
+                            <div class="analytics-icon">👁️</div>
+                            <div class="analytics-value" id="analytics-views">0</div>
+                            <div class="analytics-label">Visualizações</div>
+                        </div>
+                        <div class="analytics-card">
+                            <div class="analytics-icon">💬</div>
+                            <div class="analytics-value" id="analytics-comments">0</div>
+                            <div class="analytics-label">Comentários</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
         </div>
     </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -194,12 +360,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 
-    <!-- App Scripts -->
-    <script src="../scripts/firebase-config.js"></script>
-    <script src="../scripts/auth.js"></script>
-    <script src="../scripts/firestore.js"></script>
-    <script src="../scripts/admin.js"></script>
-    <script src="../scripts/ui.js"></script>
+    <!-- App Scripts (Consolidated) -->
+    <script src="../scripts/app-core.js"></script>
+    <script src="../scripts/app-catalog.js"></script>
+    <script src="../scripts/app-admin.js"></script>
 
     <script>
         // Protect page - require admin access
@@ -220,9 +384,28 @@
             const initials = user.displayName ? user.displayName.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase();
             document.getElementById('user-avatar').textContent = initials;
 
+            // Setup user menu toggle
+            setupUserMenu();
+
             // Load dashboard data
             loadDashboard();
         });
+
+        // Setup user menu
+        function setupUserMenu() {
+            const menuBtn = document.getElementById('user-menu-btn');
+            const dropdown = document.getElementById('user-menu-dropdown');
+            
+            menuBtn.addEventListener('click', () => {
+                dropdown.classList.toggle('show');
+            });
+            
+            document.addEventListener('click', (e) => {
+                if (!menuBtn.contains(e.target)) {
+                    dropdown.classList.remove('show');
+                }
+            });
+        }
 
         // Load dashboard
         async function loadDashboard() {
@@ -233,7 +416,9 @@
         }
 
         // Show section
-        function showSection(section) {
+        function showSection(section, event) {
+            if (event) event.preventDefault();
+            
             // Hide all sections
             document.querySelectorAll('.admin-content-section').forEach(s => {
                 s.style.display = 'none';
@@ -245,10 +430,15 @@
             });
 
             // Show selected section
-            document.getElementById('section-' + section).style.display = 'block';
+            const sectionEl = document.getElementById('section-' + section);
+            if (sectionEl) {
+                sectionEl.style.display = 'block';
+            }
 
             // Add active class to clicked link
-            event.target.closest('.admin-nav-link').classList.add('active');
+            if (event && event.target) {
+                event.target.closest('.admin-nav-link').classList.add('active');
+            }
         }
 
         // Make admin functions available globally

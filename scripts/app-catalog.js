@@ -1,5 +1,7 @@
-// Firestore Database Operations for Cruciflix
-// Handles all database interactions for videos, comments, progress, and user data
+// ============================================
+// CRUCIFLIX - APP CATALOG
+// Firestore Operations + Video Player (Consolidated)
+// ============================================
 
 // ============================================
 // VIDEO OPERATIONS
@@ -21,7 +23,7 @@ async function getAllVideos() {
     }
 }
 
-// Get videos by tags (supports multiple tags - AND logic)
+// Get videos by tags (supports multiple tags)
 async function getVideosByTags(tags) {
     try {
         if (!tags || tags.length === 0) {
@@ -36,7 +38,6 @@ async function getVideosByTags(tags) {
         const videos = [];
         snapshot.forEach(doc => {
             const videoData = { id: doc.id, ...doc.data() };
-            // Filter to ensure ALL tags are present (array-contains-any is OR logic)
             const hasAllTags = tags.every(tag => videoData.tags.includes(tag));
             if (hasAllTags || tags.length === 1) {
                 videos.push(videoData);
@@ -195,7 +196,7 @@ async function getProgress(videoId) {
     }
 }
 
-// Get all user progress (for profile page)
+// Get all user progress (for profile/dashboard)
 async function getUserProgress() {
     try {
         const user = firebaseAuth.currentUser;
@@ -237,7 +238,7 @@ async function addComment(videoId, content) {
             userName: userData.displayName || user.email,
             content: content,
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            approved: false // Requires moderation
+            approved: false
         });
 
         console.log('✅ Comment added (pending approval)');
@@ -318,7 +319,7 @@ async function deleteComment(commentId) {
 // SEARCH OPERATIONS
 // ============================================
 
-// Search videos by title
+// Search videos by title/description
 async function searchVideos(searchTerm) {
     try {
         const allVideos = await getAllVideos();
@@ -337,7 +338,7 @@ async function searchVideos(searchTerm) {
     }
 }
 
-// Export functions
+// Export Firestore module
 window.firestoreModule = {
     getAllVideos,
     getVideosByTags,
@@ -356,4 +357,260 @@ window.firestoreModule = {
     approveComment,
     deleteComment,
     searchVideos
+};
+
+// ============================================
+// HLS VIDEO PLAYER
+// ============================================
+
+let hlsPlayer = null;
+let currentVideoElement = null;
+let progressSaveInterval = null;
+let currentVideoId = null;
+
+// Initialize HLS player
+function initPlayer(videoElementId, hlsUrl, videoId) {
+    currentVideoElement = document.getElementById(videoElementId);
+    currentVideoId = videoId;
+
+    if (!currentVideoElement) {
+        console.error('❌ Video element not found');
+        return;
+    }
+
+    // Check if HLS.js is loaded
+    if (typeof Hls === 'undefined') {
+        console.error('❌ HLS.js not loaded');
+        return;
+    }
+
+    if (Hls.isSupported()) {
+        hlsPlayer = new Hls({
+            enableWorker: true,
+            lowLatencyMode: false,
+        });
+
+        hlsPlayer.loadSource(hlsUrl);
+        hlsPlayer.attachMedia(currentVideoElement);
+
+        hlsPlayer.on(Hls.Events.MANIFEST_PARSED, function () {
+            console.log('✅ HLS manifest loaded');
+            loadSavedProgress(videoId);
+        });
+
+        hlsPlayer.on(Hls.Events.ERROR, function (event, data) {
+            if (data.fatal) {
+                console.error('❌ Fatal HLS error:', data);
+                switch (data.type) {
+                    case Hls.ErrorTypes.NETWORK_ERROR:
+                        hlsPlayer.startLoad();
+                        break;
+                    case Hls.ErrorTypes.MEDIA_ERROR:
+                        hlsPlayer.recoverMediaError();
+                        break;
+                    default:
+                        break;
+                }
+            }
+        });
+    } else if (currentVideoElement.canPlayType('application/vnd.apple.mpegurl')) {
+        // Safari native HLS support
+        currentVideoElement.src = hlsUrl;
+        currentVideoElement.addEventListener('loadedmetadata', function () {
+            console.log('✅ Native HLS loaded');
+            loadSavedProgress(videoId);
+        });
+    } else {
+        alert('Este navegador não suporta reprodução HLS.');
+    }
+
+    // Start auto-saving progress
+    startProgressTracking(videoId);
+
+    // Increment view count
+    incrementViewCount(videoId);
+}
+
+// Load saved progress and resume playback
+async function loadSavedProgress(videoId) {
+    const progress = await getProgress(videoId);
+    if (progress && progress.watchTime > 0 && !progress.completed) {
+        currentVideoElement.currentTime = progress.watchTime;
+        console.log(`✅ Resumed from ${progress.watchTime}s`);
+    }
+}
+
+// Start tracking progress (save every 10 seconds)
+function startProgressTracking(videoId) {
+    if (progressSaveInterval) {
+        clearInterval(progressSaveInterval);
+    }
+
+    progressSaveInterval = setInterval(() => {
+        if (currentVideoElement && !currentVideoElement.paused) {
+            const currentTime = currentVideoElement.currentTime;
+            const duration = currentVideoElement.duration;
+            const completed = (currentTime / duration) > 0.9;
+
+            saveProgress(videoId, currentTime, completed);
+        }
+    }, 10000);
+}
+
+// Stop progress tracking
+function stopProgressTracking() {
+    if (progressSaveInterval) {
+        clearInterval(progressSaveInterval);
+        progressSaveInterval = null;
+    }
+}
+
+// Play/Pause toggle
+function togglePlayPause() {
+    if (!currentVideoElement) return;
+    if (currentVideoElement.paused) {
+        currentVideoElement.play();
+    } else {
+        currentVideoElement.pause();
+    }
+}
+
+// Set volume (0 to 1)
+function setVolume(volume) {
+    if (!currentVideoElement) return;
+    currentVideoElement.volume = Math.max(0, Math.min(1, volume));
+}
+
+// Toggle mute
+function toggleMute() {
+    if (!currentVideoElement) return;
+    currentVideoElement.muted = !currentVideoElement.muted;
+}
+
+// Toggle fullscreen
+function toggleFullscreen(containerElement) {
+    const element = containerElement || currentVideoElement;
+    if (!element) return;
+
+    if (!document.fullscreenElement) {
+        if (element.requestFullscreen) {
+            element.requestFullscreen();
+        } else if (element.webkitRequestFullscreen) {
+            element.webkitRequestFullscreen();
+        } else if (element.mozRequestFullScreen) {
+            element.mozRequestFullScreen();
+        } else if (element.msRequestFullscreen) {
+            element.msRequestFullscreen();
+        }
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        }
+    }
+}
+
+// Seek to specific time
+function seekTo(seconds) {
+    if (!currentVideoElement) return;
+    currentVideoElement.currentTime = seconds;
+}
+
+// Skip forward/backward
+function skip(seconds) {
+    if (!currentVideoElement) return;
+    currentVideoElement.currentTime += seconds;
+}
+
+// Get current video element
+function getVideoElement() {
+    return currentVideoElement;
+}
+
+// Keyboard shortcuts
+function setupKeyboardControls() {
+    document.addEventListener('keydown', function (e) {
+        if (!currentVideoElement) return;
+        // Don't trigger if user is typing in an input
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+        switch (e.key) {
+            case ' ':
+            case 'k':
+            case 'K':
+                e.preventDefault();
+                togglePlayPause();
+                break;
+            case 'f':
+            case 'F':
+                e.preventDefault();
+                toggleFullscreen();
+                break;
+            case 'm':
+            case 'M':
+                e.preventDefault();
+                toggleMute();
+                break;
+            case 'ArrowLeft':
+                e.preventDefault();
+                skip(-10);
+                break;
+            case 'ArrowRight':
+                e.preventDefault();
+                skip(10);
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                setVolume(currentVideoElement.volume + 0.1);
+                break;
+            case 'ArrowDown':
+                e.preventDefault();
+                setVolume(currentVideoElement.volume - 0.1);
+                break;
+            case 'Escape':
+                // Close modal if open
+                const modal = document.getElementById('player-modal');
+                if (modal && modal.style.display !== 'none') {
+                    closePlayerModal();
+                }
+                break;
+        }
+    });
+}
+
+// Cleanup on page unload
+function cleanupPlayer() {
+    stopProgressTracking();
+    if (hlsPlayer) {
+        hlsPlayer.destroy();
+        hlsPlayer = null;
+    }
+    currentVideoElement = null;
+    currentVideoId = null;
+}
+
+window.addEventListener('beforeunload', cleanupPlayer);
+
+// Close player modal helper
+function closePlayerModal() {
+    const modal = document.getElementById('player-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+    cleanupPlayer();
+}
+
+// Export Player module
+window.playerModule = {
+    initPlayer,
+    togglePlayPause,
+    setVolume,
+    toggleMute,
+    toggleFullscreen,
+    seekTo,
+    skip,
+    getVideoElement,
+    setupKeyboardControls,
+    cleanupPlayer,
+    closePlayerModal
 };

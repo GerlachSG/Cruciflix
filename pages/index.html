@@ -91,21 +91,23 @@
         </div>
     </div>
 
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 
-    <!-- App Scripts -->
-    <script src="../scripts/firebase-config.js"></script>
-    <script src="../scripts/auth.js"></script>
-    <script src="../scripts/ui.js"></script>
+    <!-- App Scripts (Consolidated) -->
+    <script src="../scripts/app-core.js"></script>
 
     <script>
+        let isSubmitting = false;
         // Check if user is already logged in
         window.authModule.onAuthStateChanged((authState) => {
-            if (authState.loggedIn) {
+            if (authState.loggedIn && !isSubmitting) {
                 window.location.href = 'dashboard.html';
             }
         });
@@ -126,6 +128,7 @@
         // Handle login
         async function handleLogin(event) {
             event.preventDefault();
+            isSubmitting = true;
 
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
@@ -142,6 +145,7 @@
                     window.location.href = 'dashboard.html';
                 }, 1000);
             } else {
+                isSubmitting = false;
                 window.uiModule.showToast('Erro: ' + result.error, 'error');
             }
         }
@@ -149,6 +153,7 @@
         // Handle registration
         async function handleRegister(event) {
             event.preventDefault();
+            isSubmitting = true;
 
             const name = document.getElementById('register-name').value;
             const email = document.getElementById('register-email').value;
@@ -172,6 +177,7 @@
                     window.location.href = 'dashboard.html';
                 }, 1000);
             } else {
+                isSubmitting = false;
                 window.uiModule.showToast('Erro: ' + result.error, 'error');
             }
         }

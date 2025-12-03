@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Catálogo Cruciflix - Explore nosso acervo de filmes, séries e documentários católicos">
+    <title>Catálogo - Cruciflix</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="../styles/main.css">
+    <link rel="stylesheet" href="../styles/responsive.css">
+
+    <style>
+        /* Catalog Page Styles */
+        .catalog-page {
+            padding-top: 70px;
+            min-height: 100vh;
+        }
+
+        .catalog-header {
+            background: linear-gradient(to bottom, transparent 0%, var(--color-bg-dark) 100%),
+                url('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=2340') center/cover;
+            padding: var(--spacing-3xl) 0;
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .catalog-header-content {
+            text-align: center;
+        }
+
+        .catalog-title {
+            font-size: var(--font-size-4xl);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .catalog-subtitle {
+            font-size: var(--font-size-lg);
+            color: var(--color-text-secondary);
+            max-width: 600px;
+            margin: 0 auto var(--spacing-xl);
+        }
+
+        /* Kids Mode Toggle */
+        .kids-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .kids-toggle label {
+            font-weight: 600;
+            color: var(--color-secondary);
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            background: var(--color-bg-light);
+            border-radius: var(--radius-full);
+            cursor: pointer;
+            transition: background var(--transition-normal);
+        }
+
+        .toggle-switch.active {
+            background: var(--color-primary);
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            transition: transform var(--transition-normal);
+        }
+
+        .toggle-switch.active::after {
+            transform: translateX(30px);
+        }
+
+        /* Filter Section */
+        .filter-section {
+            background: var(--color-bg-card);
+            padding: var(--spacing-xl);
+            border-radius: var(--radius-lg);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .filter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-lg);
+            flex-wrap: wrap;
+            gap: var(--spacing-md);
+        }
+
+        .tag-filters {
+            display: flex;
+            gap: var(--spacing-md);
+            flex-wrap: wrap;
+        }
+
+        .tag-filter {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: rgba(139, 0, 0, 0.2);
+            border: 1px solid rgba(139, 0, 0, 0.4);
+            border-radius: var(--radius-full);
+            cursor: pointer;
+            transition: all var(--transition-normal);
+        }
+
+        .tag-filter:has(input:checked) {
+            background: var(--color-primary);
+            border-color: var(--color-primary);
+        }
+
+        .tag-filter input[type="checkbox"] {
+            margin: 0;
+            cursor: pointer;
+        }
+
+        .tag-filter label {
+            cursor: pointer;
+            margin: 0;
+            font-weight: 500;
+            font-size: var(--font-size-sm);
+        }
+
+        /* Videos Grid */
+        .videos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-3xl);
+        }
+
+        /* Player Modal */
+        .player-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(10px);
+            display: none;
+            z-index: var(--z-modal);
+            overflow-y: auto;
+        }
+
+        .player-modal.active {
+            display: block;
+        }
+
+        .player-modal-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--spacing-xl);
+            padding-top: 80px;
+        }
+
+        .player-close-btn {
+            position: fixed;
+            top: var(--spacing-lg);
+            right: var(--spacing-lg);
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 10;
+            transition: all var(--transition-normal);
+        }
+
+        .player-close-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        /* Video Player Styles */
+        .video-player-wrapper {
+            position: relative;
+            width: 100%;
+            background: #000;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-xl);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .video-player {
+            width: 100%;
+            display: block;
+            aspect-ratio: 16 / 9;
+        }
+
+        .player-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
+            padding: var(--spacing-xl) var(--spacing-md) var(--spacing-md);
+            opacity: 0;
+            transition: opacity var(--transition-normal);
+        }
+
+        .video-player-wrapper:hover .player-controls {
+            opacity: 1;
+        }
+
+        .progress-container {
+            position: relative;
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: var(--radius-full);
+            margin-bottom: var(--spacing-md);
+            cursor: pointer;
+        }
+
+        .progress-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: var(--color-primary);
+            border-radius: var(--radius-full);
+            width: 0%;
+        }
+
+        .controls-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--spacing-md);
+        }
+
+        .controls-left, .controls-right {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .control-btn {
+            background: transparent;
+            color: white;
+            border: none;
+            padding: var(--spacing-sm);
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        .control-btn svg {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+
+        .play-pause-btn svg {
+            width: 32px;
+            height: 32px;
+        }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .volume-slider {
+            width: 80px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: var(--radius-full);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .volume-level {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: white;
+            border-radius: var(--radius-full);
+            width: 100%;
+        }
+
+        .time-display {
+            font-size: var(--font-size-sm);
+            color: white;
+            font-weight: 500;
+        }
+
+        /* Video Metadata */
+        .video-metadata {
+            background: var(--color-bg-card);
+            padding: var(--spacing-xl);
+            border-radius: var(--radius-lg);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .video-metadata-title {
+            font-size: var(--font-size-2xl);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .video-metadata-info {
+            color: var(--color-text-secondary);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .video-metadata-description {
+            color: var(--color-text-secondary);
+            line-height: 1.8;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .video-metadata-tags {
+            display: flex;
+            gap: var(--spacing-sm);
+            flex-wrap: wrap;
+        }
+
+        /* Comments Section */
+        .comments-section {
+            background: var(--color-bg-card);
+            padding: var(--spacing-xl);
+            border-radius: var(--radius-lg);
+        }
+
+        .comments-title {
+            font-size: var(--font-size-xl);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .comment-form {
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .comment-input {
+            width: 100%;
+            min-height: 80px;
+            padding: var(--spacing-md);
+            background: var(--color-bg-light);
+            border: 1px solid transparent;
+            border-radius: var(--radius-md);
+            color: var(--color-text-primary);
+            resize: vertical;
+            font-family: inherit;
+            transition: all var(--transition-normal);
+        }
+
+        .comment-input:focus {
+            border-color: var(--color-primary);
+        }
+
+        .comment-submit {
+            margin-top: var(--spacing-md);
+        }
+
+        .comments-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+
+        .comment-item {
+            padding: var(--spacing-md);
+            background: var(--color-bg-light);
+            border-radius: var(--radius-md);
+            border-left: 3px solid var(--color-primary);
+        }
+
+        .comment-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .comment-author {
+            font-weight: 600;
+            color: var(--color-secondary);
+        }
+
+        .comment-date {
+            font-size: var(--font-size-xs);
+            color: var(--color-text-muted);
+        }
+
+        .comment-content {
+            color: var(--color-text-secondary);
+        }
+
+        .comment-pending {
+            border-left-color: var(--color-warning);
+        }
+
+        .pending-badge {
+            font-size: var(--font-size-xs);
+            padding: var(--spacing-xs) var(--spacing-sm);
+            background: var(--color-warning);
+            color: var(--color-bg-dark);
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Header Navigation -->
+    <header class="main-header">
+        <div class="container">
+            <nav class="nav-container">
+                <div class="logo" onclick="window.location.href='dashboard.html'" style="cursor: pointer;">
+                    Cruci<span class="accent">flix</span>
+                </div>
+
+                <button class="mobile-menu-toggle" id="mobile-menu-toggle">☰</button>
+
+                <div class="main-nav">
+                    <ul>
+                        <li><a href="dashboard.html">Início</a></li>
+                        <li><a href="catalogo.html">Catálogo</a></li>
+                    </ul>
+                </div>
+
+                <div class="search-bar">
+                    <input type="text" id="search-input" placeholder="Buscar conteúdo...">
+                </div>
+
+                <div class="user-menu">
+                    <div class="user-menu-btn" id="user-menu-btn">
+                        <div class="user-avatar" id="user-avatar">U</div>
+                        <span id="user-name">Usuário</span>
+                    </div>
+                    <div class="user-menu-dropdown" id="user-menu-dropdown">
+                        <a href="dashboard.html">Menu Principal</a>
+                        <a href="#" id="admin-link" style="display:none;">Painel Admin</a>
+                        <a href="#" onclick="handleLogout(event)">Sair</a>
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main class="catalog-page">
+        <!-- Catalog Header -->
+        <section class="catalog-header">
+            <div class="container">
+                <div class="catalog-header-content">
+                    <h1 class="catalog-title">Catálogo</h1>
+                    <p class="catalog-subtitle">Explore nosso acervo de filmes, séries e documentários católicos</p>
+                    
+                    <!-- Kids Mode Toggle -->
+                    <div class="kids-toggle">
+                        <label>👶 Modo Kids</label>
+                        <div class="toggle-switch" id="kids-toggle" onclick="toggleKidsMode()"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="container">
+            <!-- Filter Section -->
+            <section class="filter-section" id="filter-section">
+                <div class="filter-header">
+                    <h2>Filtrar por Tags</h2>
+                    <button class="btn btn-ghost btn-sm" onclick="resetAllFilters()">Limpar Filtros</button>
+                </div>
+
+                <div class="tag-filters" id="tag-filters">
+                    <div class="tag-filter">
+                        <input type="checkbox" id="tag-filme" value="Filme">
+                        <label for="tag-filme">Filmes</label>
+                    </div>
+                    <div class="tag-filter">
+                        <input type="checkbox" id="tag-serie" value="Série">
+                        <label for="tag-serie">Séries</label>
+                    </div>
+                    <div class="tag-filter">
+                        <input type="checkbox" id="tag-documentario" value="Documentário">
+                        <label for="tag-documentario">Documentários</label>
+                    </div>
+                    <div class="tag-filter">
+                        <input type="checkbox" id="tag-formacao" value="Formação">
+                        <label for="tag-formacao">Formação</label>
+                    </div>
+                    <div class="tag-filter">
+                        <input type="checkbox" id="tag-medieval" value="Medieval">
+                        <label for="tag-medieval">Medieval</label>
+                    </div>
+                    <div class="tag-filter">
+                        <input type="checkbox" id="tag-santo" value="Santo">
+                        <label for="tag-santo">Santos</label>
+                    </div>
+                    <div class="tag-filter">
+                        <input type="checkbox" id="tag-biblia" value="Bíblia">
+                        <label for="tag-biblia">Bíblia</label>
+                    </div>
+                    <div class="tag-filter">
+                        <input type="checkbox" id="tag-catecismo" value="Catecismo">
+                        <label for="tag-catecismo">Catecismo</label>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Videos Section -->
+            <section>
+                <h2 class="section-title" id="content-title">Conteúdo Disponível</h2>
+                <div class="videos-grid" id="videos-container">
+                    <!-- Videos will be loaded dynamically -->
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Player Modal -->
+    <div class="player-modal" id="player-modal">
+        <button class="player-close-btn" onclick="closePlayer()">✕</button>
+        
+        <div class="player-modal-content">
+            <!-- Video Player -->
+            <div class="video-player-wrapper" id="player-wrapper">
+                <video id="video-player" class="video-player"></video>
+
+                <div class="player-controls">
+                    <div class="progress-container" id="progress-container">
+                        <div class="progress-bar" id="progress-bar"></div>
+                    </div>
+
+                    <div class="controls-row">
+                        <div class="controls-left">
+                            <button class="control-btn play-pause-btn" id="play-pause-btn" onclick="window.playerModule.togglePlayPause()">
+                                <svg id="play-icon" viewBox="0 0 24 24">
+                                    <path d="M8 5v14l11-7z"/>
+                                </svg>
+                                <svg id="pause-icon" style="display:none;" viewBox="0 0 24 24">
+                                    <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                                </svg>
+                            </button>
+
+                            <div class="volume-control">
+                                <button class="control-btn" id="mute-btn" onclick="window.playerModule.toggleMute()">
+                                    <svg id="volume-icon" viewBox="0 0 24 24">
+                                        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
+                                    </svg>
+                                    <svg id="mute-icon" style="display:none;" viewBox="0 0 24 24">
+                                        <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+                                    </svg>
+                                </button>
+                                <div class="volume-slider" id="volume-slider">
+                                    <div class="volume-level" id="volume-level"></div>
+                                </div>
+                            </div>
+
+                            <span class="time-display">
+                                <span id="current-time">0:00</span> / <span id="duration">0:00</span>
+                            </span>
+                        </div>
+
+                        <div class="controls-right">
+                            <button class="control-btn" onclick="window.playerModule.toggleFullscreen(document.getElementById('player-wrapper'))">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Video Metadata -->
+            <div class="video-metadata">
+                <h1 class="video-metadata-title" id="video-title">Carregando...</h1>
+                <div class="video-metadata-info">
+                    <span id="video-views">0 visualizações</span>
+                </div>
+                <p class="video-metadata-description" id="video-description"></p>
+                <div class="video-metadata-tags" id="video-tags"></div>
+            </div>
+
+            <!-- Comments Section -->
+            <div class="comments-section">
+                <h3 class="comments-title">Comentários</h3>
+
+                <form class="comment-form" id="comment-form" onsubmit="handleCommentSubmit(event)">
+                    <textarea class="comment-input" id="comment-input" placeholder="Adicione um comentário... (todos os comentários passam por moderação)" required></textarea>
+                    <button type="submit" class="btn btn-primary comment-submit">Enviar Comentário</button>
+                </form>
+
+                <div class="comments-list" id="comments-list">
+                    <!-- Comments loaded dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HLS.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.12"></script>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+
+    <!-- App Scripts -->
+    <script src="../scripts/app-core.js"></script>
+    <script src="../scripts/app-catalog.js"></script>
+
+    <script>
+        // State
+        let kidsMode = false;
+        let currentVideoId = null;
+        let currentVideoData = null;
+        let selectedTags = [];
+
+        // Initialize page
+        window.authModule.onAuthStateChanged(async (authState) => {
+            if (!authState.loggedIn) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // Update user info
+            const user = authState.user;
+            document.getElementById('user-name').textContent = user.displayName || user.email;
+            const initials = user.displayName ? user.displayName.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase();
+            document.getElementById('user-avatar').textContent = initials;
+
+            // Show admin link if admin
+            if (authState.isAdmin) {
+                document.getElementById('admin-link').style.display = 'block';
+                document.getElementById('admin-link').href = 'admin.html';
+            }
+
+            // Check URL for video parameter
+            const videoId = window.uiModule.getUrlParameter('v');
+            if (videoId) {
+                await openPlayer(videoId);
+            }
+
+            // Load videos
+            await loadVideos();
+        });
+
+        // Load videos based on filters
+        async function loadVideos() {
+            window.uiModule.showLoading();
+            
+            let videos;
+            if (kidsMode) {
+                videos = await window.firestoreModule.getKidsVideos();
+                document.getElementById('content-title').textContent = '👶 Conteúdo Kids';
+            } else if (selectedTags.length > 0) {
+                videos = await window.firestoreModule.getVideosByTags(selectedTags);
+                document.getElementById('content-title').textContent = 'Resultados Filtrados';
+            } else {
+                videos = await window.firestoreModule.getAllVideos();
+                document.getElementById('content-title').textContent = 'Conteúdo Disponível';
+            }
+
+            displayVideos(videos);
+            window.uiModule.hideLoading();
+        }
+
+        // Display videos in grid
+        function displayVideos(videos) {
+            const container = document.getElementById('videos-container');
+            container.innerHTML = '';
+
+            if (videos.length === 0) {
+                container.innerHTML = '<p class="no-results">Nenhum vídeo encontrado</p>';
+                return;
+            }
+
+            videos.forEach(video => {
+                const card = window.uiModule.createVideoCard(video, openPlayer);
+                container.appendChild(card);
+            });
+        }
+
+        // Toggle kids mode
+        function toggleKidsMode() {
+            kidsMode = !kidsMode;
+            const toggle = document.getElementById('kids-toggle');
+            toggle.classList.toggle('active', kidsMode);
+            
+            // Reset tag filters when enabling kids mode
+            if (kidsMode) {
+                selectedTags = [];
+                document.querySelectorAll('.tag-filter input[type="checkbox"]').forEach(cb => cb.checked = false);
+            }
+            
+            loadVideos();
+        }
+
+        // Setup tag filters
+        const tagCheckboxes = document.querySelectorAll('.tag-filter input[type="checkbox"]');
+        tagCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    if (!selectedTags.includes(this.value)) {
+                        selectedTags.push(this.value);
+                    }
+                } else {
+                    selectedTags = selectedTags.filter(tag => tag !== this.value);
+                }
+                
+                // Disable kids mode when using tag filters
+                if (selectedTags.length > 0 && kidsMode) {
+                    kidsMode = false;
+                    document.getElementById('kids-toggle').classList.remove('active');
+                }
+                
+                loadVideos();
+            });
+        });
+
+        // Reset all filters
+        function resetAllFilters() {
+            selectedTags = [];
+            kidsMode = false;
+            document.getElementById('kids-toggle').classList.remove('active');
+            document.querySelectorAll('.tag-filter input[type="checkbox"]').forEach(cb => cb.checked = false);
+            loadVideos();
+        }
+
+        // Setup search
+        const searchInput = document.getElementById('search-input');
+        let searchTimeout;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(async () => {
+                const term = this.value.trim();
+                if (term.length > 0) {
+                    window.uiModule.showLoading();
+                    const results = await window.firestoreModule.searchVideos(term);
+                    document.getElementById('content-title').textContent = `Resultados para "${term}"`;
+                    displayVideos(results);
+                    window.uiModule.hideLoading();
+                } else {
+                    loadVideos();
+                }
+            }, 500);
+        });
+
+        // Open video player modal
+        async function openPlayer(videoId) {
+            currentVideoId = videoId;
+            window.uiModule.showLoading();
+
+            currentVideoData = await window.firestoreModule.getVideoById(videoId);
+            
+            if (!currentVideoData) {
+                window.uiModule.hideLoading();
+                window.uiModule.showToast('Vídeo não encontrado', 'error');
+                return;
+            }
+
+            // Update URL
+            history.pushState({}, '', `?v=${videoId}`);
+
+            // Update metadata
+            document.getElementById('video-title').textContent = currentVideoData.title;
+            document.getElementById('video-description').textContent = currentVideoData.description;
+            document.getElementById('video-views').textContent = `${currentVideoData.viewCount || 0} visualizações`;
+
+            // Update tags
+            const tagsContainer = document.getElementById('video-tags');
+            tagsContainer.innerHTML = '';
+            (currentVideoData.tags || []).forEach(tag => {
+                const tagSpan = document.createElement('span');
+                tagSpan.className = 'tag';
+                tagSpan.textContent = tag;
+                tagsContainer.appendChild(tagSpan);
+            });
+
+            // Show modal
+            document.getElementById('player-modal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+
+            // Initialize player
+            window.playerModule.initPlayer('video-player', currentVideoData.hlsUrl, videoId);
+            window.playerModule.setupKeyboardControls();
+
+            // Setup controls
+            setupPlayerControls();
+
+            // Load comments
+            await loadComments(videoId);
+
+            window.uiModule.hideLoading();
+        }
+
+        // Setup player controls
+        function setupPlayerControls() {
+            const video = document.getElementById('video-player');
+            const playIcon = document.getElementById('play-icon');
+            const pauseIcon = document.getElementById('pause-icon');
+            const progressBar = document.getElementById('progress-bar');
+            const progressContainer = document.getElementById('progress-container');
+            const currentTimeEl = document.getElementById('current-time');
+            const durationEl = document.getElementById('duration');
+            const volumeSlider = document.getElementById('volume-slider');
+            const volumeLevel = document.getElementById('volume-level');
+
+            video.addEventListener('play', () => {
+                playIcon.style.display = 'none';
+                pauseIcon.style.display = 'block';
+            });
+
+            video.addEventListener('pause', () => {
+                playIcon.style.display = 'block';
+                pauseIcon.style.display = 'none';
+            });
+
+            video.addEventListener('timeupdate', () => {
+                const progress = (video.currentTime / video.duration) * 100;
+                progressBar.style.width = progress + '%';
+                currentTimeEl.textContent = window.uiModule.formatTime(video.currentTime);
+            });
+
+            video.addEventListener('loadedmetadata', () => {
+                durationEl.textContent = window.uiModule.formatTime(video.duration);
+            });
+
+            progressContainer.addEventListener('click', (e) => {
+                const rect = progressContainer.getBoundingClientRect();
+                const pos = (e.clientX - rect.left) / rect.width;
+                window.playerModule.seekTo(pos * video.duration);
+            });
+
+            volumeSlider.addEventListener('click', (e) => {
+                const rect = volumeSlider.getBoundingClientRect();
+                const pos = (e.clientX - rect.left) / rect.width;
+                window.playerModule.setVolume(pos);
+                volumeLevel.style.width = (pos * 100) + '%';
+            });
+        }
+
+        // Close player
+        function closePlayer() {
+            document.getElementById('player-modal').classList.remove('active');
+            document.body.style.overflow = 'auto';
+            window.playerModule.cleanupPlayer();
+            currentVideoId = null;
+            currentVideoData = null;
+            
+            // Update URL
+            history.pushState({}, '', 'catalogo.html');
+        }
+
+        // Load comments
+        async function loadComments(videoId) {
+            const comments = await window.firestoreModule.getComments(videoId);
+            const commentsList = document.getElementById('comments-list');
+            commentsList.innerHTML = '';
+
+            if (comments.length === 0) {
+                commentsList.innerHTML = '<p class="no-results">Nenhum comentário ainda. Seja o primeiro!</p>';
+                return;
+            }
+
+            comments.forEach(comment => {
+                const commentEl = document.createElement('div');
+                commentEl.className = 'comment-item';
+                commentEl.innerHTML = `
+                    <div class="comment-header">
+                        <span class="comment-author">${comment.userName}</span>
+                        <span class="comment-date">${comment.createdAt ? new Date(comment.createdAt.toDate()).toLocaleDateString('pt-BR') : ''}</span>
+                    </div>
+                    <p class="comment-content">${comment.content}</p>
+                `;
+                commentsList.appendChild(commentEl);
+            });
+        }
+
+        // Handle comment submit
+        async function handleCommentSubmit(event) {
+            event.preventDefault();
+
+            const input = document.getElementById('comment-input');
+            const content = input.value.trim();
+
+            if (!content || !currentVideoId) return;
+
+            const result = await window.firestoreModule.addComment(currentVideoId, content);
+
+            if (result.success) {
+                window.uiModule.showToast('Comentário enviado! Aguarde moderação.', 'success');
+                input.value = '';
+
+                // Show pending comment
+                const commentsList = document.getElementById('comments-list');
+                const user = window.authModule.getCurrentUser();
+                const pendingComment = document.createElement('div');
+                pendingComment.className = 'comment-item comment-pending';
+                pendingComment.innerHTML = `
+                    <div class="comment-header">
+                        <span class="comment-author">${user.displayName || user.email}</span>
+                        <span class="pending-badge">Pendente</span>
+                    </div>
+                    <p class="comment-content">${content}</p>
+                `;
+                commentsList.insertBefore(pendingComment, commentsList.firstChild);
+            } else {
+                window.uiModule.showToast('Erro ao enviar comentário', 'error');
+            }
+        }
+
+        // Handle logout
+        async function handleLogout(event) {
+            event.preventDefault();
+            const result = await window.authModule.logoutUser();
+            if (result.success) {
+                window.location.href = 'index.html';
+            }
+        }
+
+        // Handle browser back button
+        window.addEventListener('popstate', () => {
+            if (document.getElementById('player-modal').classList.contains('active')) {
+                closePlayer();
+            }
+        });
+    </script>
+
+</body>
+
+</html>

@@ -4,23 +4,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description"
-        content="Catálogo Cruciflix - Explore nosso acervo de filmes, séries e documentários católicos">
-    <title>Catálogo - Cruciflix</title>
+    <meta name="description" content="Cruciflix - Plataforma de Streaming Católica">
+    <title>Cruciflix - Dashboard</title>
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;700;800&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
 
     <!-- Stylesheets -->
     <link rel="stylesheet" href="../styles/main.css">
     <link rel="stylesheet" href="../styles/responsive.css">
 
     <style>
-        /* Dashboard Specific Styles */
+        /* Dashboard Styles */
         .dashboard-page {
             padding-top: 70px;
             min-height: 100vh;
@@ -34,7 +31,6 @@
             align-items: flex-end;
             padding: var(--spacing-3xl);
             margin-bottom: var(--spacing-3xl);
-            position: relative;
         }
 
         .hero-content {
@@ -59,62 +55,168 @@
         .hero-actions {
             display: flex;
             gap: var(--spacing-md);
-        }
-
-        .filter-section {
-            background: var(--color-bg-card);
-            padding: var(--spacing-xl);
-            border-radius: var(--radius-lg);
-            margin-bottom: var(--spacing-xl);
-        }
-
-        .filter-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: var(--spacing-lg);
-        }
-
-        .tag-filters {
-            display: flex;
-            gap: var(--spacing-md);
             flex-wrap: wrap;
         }
 
-        .tag-filter {
+        /* Quick Access Cards */
+        .quick-access {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-3xl);
+        }
+
+        .quick-card {
+            background: var(--color-bg-card);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            border: 1px solid transparent;
+        }
+
+        .quick-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--color-primary);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .quick-card-icon {
+            font-size: 3rem;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .quick-card-title {
+            font-size: var(--font-size-xl);
+            font-weight: 600;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .quick-card-description {
+            color: var(--color-text-secondary);
+            font-size: var(--font-size-sm);
+        }
+
+        /* Profile Section */
+        .profile-section {
+            background: var(--color-bg-card);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-2xl);
+            margin-bottom: var(--spacing-2xl);
+        }
+
+        .profile-header {
             display: flex;
             align-items: center;
-            gap: var(--spacing-sm);
-            padding: var(--spacing-sm) var(--spacing-md);
-            background: rgba(139, 0, 0, 0.2);
-            border: 1px solid rgba(139, 0, 0, 0.4);
-            border-radius: var(--radius-full);
+            gap: var(--spacing-xl);
+            margin-bottom: var(--spacing-xl);
+            flex-wrap: wrap;
+        }
+
+        .profile-avatar-large {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--font-size-4xl);
+            font-weight: 700;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .profile-info h2 {
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .profile-email {
+            color: var(--color-text-secondary);
+        }
+
+        .profile-form {
+            display: grid;
+            gap: var(--spacing-lg);
+            max-width: 500px;
+        }
+
+        /* Watch History */
+        .history-section {
+            background: var(--color-bg-card);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-2xl);
+            margin-bottom: var(--spacing-2xl);
+        }
+
+        .history-grid {
+            display: grid;
+            gap: var(--spacing-md);
+        }
+
+        .history-item {
+            display: flex;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            background: var(--color-bg-light);
+            border-radius: var(--radius-md);
             cursor: pointer;
             transition: all var(--transition-normal);
         }
 
-        .tag-filter:has(input:checked) {
-            background: var(--color-primary);
-            border-color: var(--color-primary);
+        .history-item:hover {
+            background: var(--color-bg-medium);
+            transform: translateX(4px);
         }
 
-        .tag-filter input[type="checkbox"] {
-            margin: 0;
-            cursor: pointer;
+        .history-thumbnail {
+            width: 120px;
+            height: 70px;
+            border-radius: var(--radius-sm);
+            background-size: cover;
+            background-position: center;
+            background-color: var(--color-bg-dark);
+            flex-shrink: 0;
         }
 
-        .tag-filter label {
-            cursor: pointer;
-            margin: 0;
-            font-weight: 500;
+        .history-info {
+            flex: 1;
+        }
+
+        .history-title {
+            font-weight: 600;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .history-progress-text {
             font-size: var(--font-size-sm);
+            color: var(--color-text-muted);
+            margin-bottom: var(--spacing-xs);
         }
 
-        .videos-grid {
+        .progress-bar-container {
+            width: 100%;
+            height: 4px;
+            background: var(--color-bg-dark);
+            border-radius: var(--radius-full);
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--color-primary);
+            border-radius: var(--radius-full);
+        }
+
+        /* Continue Watching Section */
+        .continue-watching {
+            margin-bottom: var(--spacing-3xl);
+        }
+
+        .videos-row {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
             gap: var(--spacing-lg);
-            margin-bottom: var(--spacing-3xl);
         }
     </style>
 </head>
@@ -132,15 +234,8 @@
                 <div class="main-nav">
                     <ul>
                         <li><a href="dashboard.html">Início</a></li>
-                        <li><a href="kids.html">Kids</a></li>
-                        <li><a href="#" onclick="filterByTag('Filme')">Filmes</a></li>
-                        <li><a href="#" onclick="filterByTag('Série')">Séries</a></li>
-                        <li><a href="#" onclick="filterByTag('Formação')">Formação</a></li>
+                        <li><a href="catalogo.html">Catálogo</a></li>
                     </ul>
-                </div>
-
-                <div class="search-bar">
-                    <input type="text" id="search-input" placeholder="Buscar conteúdo...">
                 </div>
 
                 <div class="user-menu">
@@ -149,7 +244,7 @@
                         <span id="user-name">Usuário</span>
                     </div>
                     <div class="user-menu-dropdown" id="user-menu-dropdown">
-                        <a href="profile.html">Meu Perfil</a>
+                        <a href="#profile-section" onclick="scrollToProfile()">Meu Perfil</a>
                         <a href="#" id="admin-link" style="display:none;">Painel Admin</a>
                         <a href="#" onclick="handleLogout(event)">Sair</a>
                     </div>
@@ -165,68 +260,88 @@
             <div class="hero-content">
                 <h1 class="hero-title">Bem-vindo ao Cruciflix</h1>
                 <p class="hero-description">
-                    Assista aos melhores filmes, séries e documentários católicos. Fortaleça sua fé enquanto se
-                    entretém.
+                    Assista aos melhores filmes, séries e documentários católicos. Fortaleça sua fé enquanto se entretém.
                 </p>
                 <div class="hero-actions">
-                    <button class="btn btn-primary" onclick="scrollToContent()">Explorar Catálogo</button>
-                    <button class="btn btn-secondary" onclick="window.location.href='kids.html'">Área Kids</button>
+                    <button class="btn btn-primary" onclick="window.location.href='catalogo.html'">Explorar Catálogo</button>
+                    <button class="btn btn-secondary" onclick="window.location.href='catalogo.html'">👶 Área Kids</button>
                 </div>
             </div>
         </section>
 
         <div class="container">
 
-            <!-- Filter Section -->
-            <section class="filter-section" id="filter-section">
-                <div class="filter-header">
-                    <h2>Filtrar por Tags</h2>
-                    <button class="btn btn-ghost btn-sm" onclick="window.uiModule.resetFilters()">Limpar
-                        Filtros</button>
+            <!-- Quick Access -->
+            <section class="quick-access">
+                <div class="quick-card" onclick="window.location.href='catalogo.html'">
+                    <div class="quick-card-icon">🎬</div>
+                    <div class="quick-card-title">Catálogo Completo</div>
+                    <div class="quick-card-description">Explore todos os vídeos disponíveis</div>
                 </div>
-
-                <div class="tag-filters" id="tag-filters">
-                    <div class="tag-filter">
-                        <input type="checkbox" id="tag-filme" value="Filme">
-                        <label for="tag-filme">Filmes</label>
-                    </div>
-                    <div class="tag-filter">
-                        <input type="checkbox" id="tag-serie" value="Série">
-                        <label for="tag-serie">Séries</label>
-                    </div>
-                    <div class="tag-filter">
-                        <input type="checkbox" id="tag-documentario" value="Documentário">
-                        <label for="tag-documentario">Documentários</label>
-                    </div>
-                    <div class="tag-filter">
-                        <input type="checkbox" id="tag-formacao" value="Formação">
-                        <label for="tag-formacao">Formação</label>
-                    </div>
-                    <div class="tag-filter">
-                        <input type="checkbox" id="tag-medieval" value="Medieval">
-                        <label for="tag-medieval">Medieval</label>
-                    </div>
-                    <div class="tag-filter">
-                        <input type="checkbox" id="tag-santo" value="Santo">
-                        <label for="tag-santo">Santos</label>
-                    </div>
-                    <div class="tag-filter">
-                        <input type="checkbox" id="tag-biblia" value="Bíblia">
-                        <label for="tag-biblia">Bíblia</label>
-                    </div>
-                    <div class="tag-filter">
-                        <input type="checkbox" id="tag-catecismo" value="Catecismo">
-                        <label for="tag-catecismo">Catecismo</label>
-                    </div>
+                <div class="quick-card" onclick="window.location.href='catalogo.html'">
+                    <div class="quick-card-icon">👶</div>
+                    <div class="quick-card-title">Conteúdo Kids</div>
+                    <div class="quick-card-description">Vídeos seguros para crianças</div>
+                </div>
+                <div class="quick-card" onclick="scrollToHistory()">
+                    <div class="quick-card-icon">📺</div>
+                    <div class="quick-card-title">Continuar Assistindo</div>
+                    <div class="quick-card-description">Retome de onde parou</div>
+                </div>
+                <div class="quick-card" onclick="scrollToProfile()">
+                    <div class="quick-card-icon">👤</div>
+                    <div class="quick-card-title">Meu Perfil</div>
+                    <div class="quick-card-description">Gerencie sua conta</div>
                 </div>
             </section>
 
-            <!-- Videos Section -->
-            <section>
-                <h2 class="section-title">Conteúdo Disponível</h2>
-                <div class="videos-grid" id="videos-container">
-                    <!-- Videos will be loaded dynamically -->
+            <!-- Continue Watching -->
+            <section class="continue-watching" id="continue-section">
+                <h2 class="section-title">Continuar Assistindo</h2>
+                <div class="videos-row" id="continue-watching-container">
+                    <!-- Loaded dynamically -->
                 </div>
+            </section>
+
+            <!-- Watch History -->
+            <section class="history-section" id="history-section">
+                <h2>Histórico de Visualização</h2>
+                <div class="history-grid" id="history-container">
+                    <!-- Loaded dynamically -->
+                </div>
+            </section>
+
+            <!-- Profile Section -->
+            <section class="profile-section" id="profile-section">
+                <div class="profile-header">
+                    <div class="profile-avatar-large" id="profile-avatar-large">U</div>
+                    <div class="profile-info">
+                        <h2 id="profile-name">Carregando...</h2>
+                        <p class="profile-email" id="profile-email"></p>
+                    </div>
+                </div>
+
+                <h3 style="margin-bottom: var(--spacing-lg);">Configurações da Conta</h3>
+
+                <form class="profile-form" id="profile-form" onsubmit="handleProfileUpdate(event)">
+                    <div class="form-group">
+                        <label class="form-label">Nome de Exibição</label>
+                        <input type="text" id="display-name" class="form-input" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" id="email-display" class="form-input" disabled>
+                        <small style="color: var(--color-text-muted);">O email não pode ser alterado</small>
+                    </div>
+
+                    <div style="display: flex; gap: var(--spacing-md); flex-wrap: wrap;">
+                        <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                        <button type="button" class="btn btn-ghost" style="border-color: var(--color-warning); color: var(--color-warning);" onclick="handlePasswordReset()">
+                            Redefinir Senha
+                        </button>
+                    </div>
+                </form>
             </section>
 
         </div>
@@ -239,77 +354,170 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 
     <!-- App Scripts -->
-    <script src="../scripts/firebase-config.js"></script>
-    <script src="../scripts/auth.js"></script>
-    <script src="../scripts/firestore.js"></script>
-    <script src="../scripts/ui.js"></script>
+    <script src="../scripts/app-core.js"></script>
+    <script src="../scripts/app-catalog.js"></script>
 
     <script>
-        // Protect page - require authentication
+        let currentUser = null;
+
+        // Initialize page
         window.authModule.onAuthStateChanged(async (authState) => {
             if (!authState.loggedIn) {
                 window.location.href = 'index.html';
                 return;
             }
 
+            currentUser = authState.user;
+
             // Update user info in header
-            const user = authState.user;
-            document.getElementById('user-name').textContent = user.displayName || user.email;
-            const initials = user.displayName ? user.displayName.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase();
+            const displayName = currentUser.displayName || currentUser.email;
+            const initials = displayName.charAt(0).toUpperCase();
+            
+            document.getElementById('user-name').textContent = displayName;
             document.getElementById('user-avatar').textContent = initials;
 
-            // Show admin link if user is admin
+            // Update profile section
+            document.getElementById('profile-name').textContent = displayName;
+            document.getElementById('profile-email').textContent = currentUser.email;
+            document.getElementById('profile-avatar-large').textContent = initials;
+            document.getElementById('display-name').value = currentUser.displayName || '';
+            document.getElementById('email-display').value = currentUser.email;
+
+            // Show admin link if admin
             if (authState.isAdmin) {
                 document.getElementById('admin-link').style.display = 'block';
                 document.getElementById('admin-link').href = 'admin.html';
             }
 
-            // Load videos
-            loadAllVideos();
+            // Load user data
+            await loadContinueWatching();
+            await loadWatchHistory();
         });
 
-        // Load all videos
-        async function loadAllVideos() {
-            window.uiModule.showLoading();
-            const videos = await window.firestoreModule.getAllVideos();
-            window.uiModule.displayVideos(videos);
-            window.uiModule.hideLoading();
-        }
+        // Load continue watching (incomplete videos)
+        async function loadContinueWatching() {
+            const container = document.getElementById('continue-watching-container');
+            const progressList = await window.firestoreModule.getUserProgress();
+            
+            // Filter to only incomplete videos
+            const incompleteProgress = progressList.filter(p => !p.completed && p.watchTime > 0);
+            
+            if (incompleteProgress.length === 0) {
+                container.innerHTML = '<p class="no-results">Nenhum vídeo em andamento. Explore o catálogo!</p>';
+                return;
+            }
 
-        // Setup tag filters
-        const tagCheckboxes = document.querySelectorAll('.tag-filter input[type="checkbox"]');
-        window.uiModule.setupTagFilter(tagCheckboxes);
+            container.innerHTML = '';
 
-        // Setup search
-        const searchInput = document.getElementById('search-input');
-        window.uiModule.setupSearch(searchInput);
+            for (const progress of incompleteProgress.slice(0, 4)) {
+                const video = await window.firestoreModule.getVideoById(progress.videoId);
+                if (!video) continue;
 
-        // Filter by specific tag (from navigation)
-        function filterByTag(tag) {
-            scrollToContent();
-
-            // Clear all filters first
-            tagCheckboxes.forEach(cb => cb.checked = false);
-
-            // Check the specific tag
-            const checkbox = document.querySelector(`input[value="${tag}"]`);
-            if (checkbox) {
-                checkbox.checked = true;
-                checkbox.dispatchEvent(new Event('change'));
+                const card = window.uiModule.createVideoCard(video, (id) => {
+                    window.location.href = `catalogo.html?v=${id}`;
+                });
+                container.appendChild(card);
             }
         }
 
-        // Scroll to content
-        function scrollToContent() {
-            document.getElementById('filter-section').scrollIntoView({ behavior: 'smooth' });
+        // Load watch history
+        async function loadWatchHistory() {
+            const container = document.getElementById('history-container');
+            const progressList = await window.firestoreModule.getUserProgress();
+
+            if (progressList.length === 0) {
+                container.innerHTML = '<p class="no-results">Você ainda não assistiu nenhum vídeo.</p>';
+                return;
+            }
+
+            container.innerHTML = '';
+
+            for (const progress of progressList.slice(0, 10)) {
+                const video = await window.firestoreModule.getVideoById(progress.videoId);
+                if (!video) continue;
+
+                const percentage = video.duration > 0 ? (progress.watchTime / video.duration) * 100 : 0;
+                const thumbnail = video.thumbnailUrl || 'https://via.placeholder.com/120x70/1a1a2e/00d9ff?text=' + encodeURIComponent(video.title.substring(0, 10));
+
+                const item = document.createElement('div');
+                item.className = 'history-item';
+                item.onclick = () => window.location.href = `catalogo.html?v=${video.id}`;
+
+                item.innerHTML = `
+                    <div class="history-thumbnail" style="background-image: url('${thumbnail}');"></div>
+                    <div class="history-info">
+                        <div class="history-title">${video.title}</div>
+                        <div class="history-progress-text">
+                            ${window.uiModule.formatTime(progress.watchTime)} / ${window.uiModule.formatTime(video.duration)}
+                            ${progress.completed ? ' - ✓ Concluído' : ''}
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" style="width: ${Math.min(percentage, 100)}%;"></div>
+                        </div>
+                    </div>
+                `;
+
+                container.appendChild(item);
+            }
+        }
+
+        // Handle profile update
+        async function handleProfileUpdate(event) {
+            event.preventDefault();
+
+            const newDisplayName = document.getElementById('display-name').value.trim();
+
+            if (!newDisplayName) {
+                window.uiModule.showToast('Nome não pode estar vazio', 'error');
+                return;
+            }
+
+            window.uiModule.showLoading();
+
+            const result = await window.authModule.updateUserProfile({
+                displayName: newDisplayName
+            });
+
+            window.uiModule.hideLoading();
+
+            if (result.success) {
+                window.uiModule.showToast('Perfil atualizado com sucesso!', 'success');
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                window.uiModule.showToast('Erro ao atualizar perfil: ' + result.error, 'error');
+            }
+        }
+
+        // Handle password reset
+        async function handlePasswordReset() {
+            if (!confirm('Deseja redefinir sua senha? Um email será enviado para ' + currentUser.email)) {
+                return;
+            }
+
+            window.uiModule.showLoading();
+            const result = await window.authModule.resetPassword(currentUser.email);
+            window.uiModule.hideLoading();
+
+            if (result.success) {
+                window.uiModule.showToast('Email de redefinição enviado!', 'success');
+            } else {
+                window.uiModule.showToast('Erro: ' + result.error, 'error');
+            }
+        }
+
+        // Scroll helpers
+        function scrollToProfile() {
+            document.getElementById('profile-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function scrollToHistory() {
+            document.getElementById('history-section').scrollIntoView({ behavior: 'smooth' });
         }
 
         // Handle logout
         async function handleLogout(event) {
             event.preventDefault();
-
             const result = await window.authModule.logoutUser();
-
             if (result.success) {
                 window.location.href = 'index.html';
             } else {
