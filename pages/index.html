@@ -10,82 +10,826 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;700;800&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
 
-    <!-- Stylesheets -->
-    <link rel="stylesheet" href="../styles/main.css">
-    <link rel="stylesheet" href="../styles/responsive.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        /* ============================================
+           CRUCIFLIX AUTH PAGE - PREMIUM DESIGN
+           ============================================ */
+        :root {
+            --primary: #00a89d;
+            --primary-glow: rgba(0, 168, 157, 0.4);
+            --secondary: #d4af37;
+            --bg-dark: #0a0a0a;
+            --bg-card: rgba(15, 15, 20, 0.85);
+            --text-primary: #ffffff;
+            --text-muted: #888;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            min-height: 100vh;
+            overflow-x: hidden;
+            color: var(--text-primary);
+        }
+
+        /* ============================================
+           ANIMATED BACKGROUND
+           ============================================ */
+        .bg-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .bg-image {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.4;
+            filter: blur(2px);
+        }
+
+        .bg-overlay {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                135deg,
+                rgba(0, 0, 0, 0.9) 0%,
+                rgba(0, 20, 20, 0.7) 50%,
+                rgba(0, 0, 0, 0.95) 100%
+            );
+        }
+
+        /* Animated light orbs */
+        .light-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.5;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        .light-orb-1 {
+            width: 400px;
+            height: 400px;
+            background: var(--primary-glow);
+            top: -100px;
+            right: -100px;
+            animation-delay: 0s;
+        }
+
+        .light-orb-2 {
+            width: 300px;
+            height: 300px;
+            background: rgba(212, 175, 55, 0.3);
+            bottom: -50px;
+            left: -50px;
+            animation-delay: -4s;
+        }
+
+        .light-orb-3 {
+            width: 200px;
+            height: 200px;
+            background: var(--primary-glow);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation-delay: -2s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-30px) scale(1.1); }
+        }
+
+        /* ============================================
+           MAIN CONTAINER
+           ============================================ */
+        .auth-wrapper {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .auth-container {
+            display: flex;
+            width: 100%;
+            max-width: 1100px;
+            min-height: 650px;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 
+                0 25px 80px rgba(0, 0, 0, 0.5),
+                0 0 100px rgba(0, 168, 157, 0.1);
+            position: relative;
+        }
+
+        /* ============================================
+           IMAGE PANELS
+           ============================================ */
+        .image-panel {
+            flex: 1;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 40px;
+            overflow: hidden;
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .image-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                to top,
+                rgba(0, 0, 0, 0.95) 0%,
+                rgba(0, 0, 0, 0.5) 40%,
+                rgba(0, 0, 0, 0.2) 100%
+            );
+            z-index: 1;
+        }
+
+        .image-panel img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.6s ease;
+        }
+
+        .image-panel:hover img {
+            transform: scale(1.05);
+        }
+
+        .image-panel-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .image-panel h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .image-panel p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.95rem;
+            margin-bottom: 20px;
+            max-width: 280px;
+        }
+
+        .panel-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 28px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            color: #fff;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .panel-btn:hover {
+            background: var(--primary);
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 168, 157, 0.3);
+        }
+
+        /* Login panel - hidden by default when on register */
+        .login-image-panel {
+            display: flex;
+        }
+
+        /* Register panel - hidden by default */
+        .register-image-panel {
+            display: none;
+        }
+
+        /* ============================================
+           FORM PANEL
+           ============================================ */
+        .form-panel {
+            flex: 1;
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            padding: 50px 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .form-panel::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(0, 168, 157, 0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        /* Logo */
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-decoration: none;
+            margin-bottom: 30px;
+        }
+
+        .logo i {
+            font-size: 1.5rem;
+        }
+
+        /* Form styles */
+        .form-wrapper {
+            width: 100%;
+            max-width: 380px;
+            margin: 0 auto;
+        }
+
+        .form-wrapper h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.8) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .form-subtitle {
+            color: var(--text-muted);
+            margin-bottom: 30px;
+            font-size: 0.95rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 16px 20px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(0, 168, 157, 0.05);
+            box-shadow: 0 0 20px rgba(0, 168, 157, 0.15);
+        }
+
+        /* Autofill styling */
+        .form-input:-webkit-autofill,
+        .form-input:-webkit-autofill:hover,
+        .form-input:-webkit-autofill:focus {
+            -webkit-box-shadow: 0 0 0 30px rgba(15, 15, 20, 0.95) inset !important;
+            -webkit-text-fill-color: #fff !important;
+            caret-color: #fff !important;
+        }
+
+        /* Primary button */
+        .btn-primary {
+            width: 100%;
+            padding: 16px 28px;
+            background: linear-gradient(135deg, var(--primary) 0%, #00c4b8 100%);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(0, 168, 157, 0.4);
+        }
+
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+
+        /* Links */
+        .form-link {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            text-decoration: none;
+            transition: color 0.3s;
+            display: inline-block;
+            margin: 15px 0;
+        }
+
+        .form-link:hover {
+            color: var(--primary);
+        }
+
+        .form-link-highlight {
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        /* Divider */
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 25px 0;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--glass-border);
+        }
+
+        /* Plan selection */
+        .plans-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+            max-height: 280px;
+            overflow-y: auto;
+            padding-right: 5px;
+            margin-bottom: 20px;
+        }
+
+        .plans-container::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .plans-container::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+        }
+
+        .plans-container::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 4px;
+        }
+
+        .plan-option {
+            background: var(--glass-bg);
+            border: 2px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 16px 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .plan-option:hover {
+            border-color: rgba(0, 168, 157, 0.5);
+            background: rgba(0, 168, 157, 0.05);
+        }
+
+        .plan-option.selected {
+            border-color: var(--primary);
+            background: rgba(0, 168, 157, 0.1);
+            box-shadow: 0 0 30px rgba(0, 168, 157, 0.15);
+        }
+
+        .plan-header-opt {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .plan-header-opt strong {
+            font-size: 1rem;
+        }
+
+        .plan-price-opt {
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .plan-option small {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        .popular-badge {
+            position: absolute;
+            top: -10px;
+            right: 12px;
+            background: linear-gradient(135deg, var(--primary) 0%, #00c4b8 100%);
+            color: #fff;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .plan-change-link {
+            color: var(--primary);
+            margin-left: 8px;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .plan-change-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Mobile toggle */
+        .mobile-toggle {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .mobile-toggle span {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .mobile-toggle a {
+            color: var(--primary);
+            font-weight: 600;
+            text-decoration: none;
+            margin-left: 5px;
+        }
+
+        /* ============================================
+           STATE MANAGEMENT
+           ============================================ */
+        /* Login form visible by default */
+        #login-form {
+            display: block;
+        }
+
+        #plan-selection,
+        #register-form {
+            display: none;
+        }
+
+        /* When showing register */
+        .auth-container.show-register .login-image-panel {
+            display: none;
+        }
+
+        .auth-container.show-register .register-image-panel {
+            display: flex;
+        }
+
+        .auth-container.show-register #login-form {
+            display: none;
+        }
+
+        .auth-container.show-register #plan-selection {
+            display: block;
+        }
+
+        .auth-container.show-register.show-register-form #plan-selection {
+            display: none;
+        }
+
+        .auth-container.show-register.show-register-form #register-form {
+            display: block;
+        }
+
+        /* ============================================
+           TOAST CONTAINER
+           ============================================ */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+
+        /* ============================================
+           RESPONSIVE
+           ============================================ */
+        @media (max-width: 900px) {
+            .auth-container {
+                flex-direction: column;
+                max-width: 500px;
+            }
+
+            .image-panel {
+                min-height: 200px;
+                display: none;
+            }
+
+            .form-panel {
+                padding: 40px 30px;
+            }
+
+            .mobile-toggle {
+                display: block;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .form-panel {
+                padding: 30px 20px;
+            }
+
+            .form-wrapper h1 {
+                font-size: 1.6rem;
+            }
+
+            .logo {
+                font-size: 1.5rem;
+            }
+        }
+
+        /* Corner modal (small messages/errors) */
+        .corner-modal {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            max-width: 320px;
+            background: linear-gradient(180deg, rgba(20,20,20,0.95), rgba(10,10,10,0.9));
+            color: #fff;
+            border-radius: 12px;
+            padding: 14px 16px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.04);
+            transform: translateY(20px) scale(0.98);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 260ms ease;
+            z-index: 99999;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .corner-modal.visible {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .corner-modal .cm-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .corner-modal .cm-content {
+            flex: 1;
+            font-size: 0.95rem;
+            line-height: 1.3;
+        }
+
+        .corner-modal .cm-close {
+            background: transparent;
+            border: none;
+            color: rgba(255,255,255,0.7);
+            cursor: pointer;
+            font-size: 16px;
+            margin-left: 8px;
+        }
+
+        .corner-modal.type-success { border-left: 4px solid rgba(0,200,150,0.9); }
+        .corner-modal.type-error { border-left: 4px solid rgba(255,80,80,0.9); }
+        .corner-modal.type-info { border-left: 4px solid rgba(0,160,220,0.9); }
+    </style>
 </head>
 
-<body class="auth-body">
+<body>
+    <!-- Animated Background -->
+    <div class="bg-container">
+        <img src="https://images.unsplash.com/photo-1507692049790-de58290a4334?w=1920" alt="" class="bg-image">
+        <div class="bg-overlay"></div>
+        <div class="light-orb light-orb-1"></div>
+        <div class="light-orb light-orb-2"></div>
+        <div class="light-orb light-orb-3"></div>
+    </div>
 
-    <div class="auth-container" id="auth-container">
+    <div class="auth-wrapper">
+        <div class="auth-container" id="auth-container">
+            
+            <!-- Image Panel - Login Side -->
+            <div class="image-panel login-image-panel">
+                <img src="https://images.unsplash.com/photo-1544816155-12df9643f363?w=800" alt="Login">
+                <div class="image-panel-content">
+                    <h2>Bem-vindo de volta!</h2>
+                    <p>Continue sua jornada espiritual com conteúdos que edificam a fé.</p>
+                    <button class="panel-btn" onclick="showRegister()">
+                        <i class="fas fa-user-plus"></i>
+                        Criar conta
+                    </button>
+                </div>
+            </div>
 
-        <!-- Sign Up Container (Left) -->
-        <div class="form-container sign-up-container">
-            <form id="register-form" class="form-wrapper" onsubmit="handleRegister(event)">
-                <h1 class="auth-logo">Cruci<span>flix</span></h1>
-                <h1>Criar Conta</h1>
-                <div class="auth-social-container">
-                    <!-- Social icons removed -->
+            <!-- Image Panel - Register Side -->
+            <div class="image-panel register-image-panel">
+                <img src="https://images.unsplash.com/photo-1499652848871-1527a310b13a?w=800" alt="Cadastro">
+                <div class="image-panel-content">
+                    <h2>Já tem uma conta?</h2>
+                    <p>Acesse sua conta e continue de onde parou.</p>
+                    <button class="panel-btn" onclick="showLogin()">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Entrar
+                    </button>
                 </div>
-                <span class="text-muted">ou use seu email para registro</span>
-                <div class="form-group">
-                    <input type="text" id="register-name" placeholder="Nome" class="form-input" required />
-                </div>
-                <div class="form-group">
-                    <input type="email" id="register-email" placeholder="Email" class="form-input" required />
-                </div>
-                <div class="form-group">
-                    <input type="password" id="register-password" placeholder="Senha" class="form-input" required
-                        minlength="6" />
-                </div>
-                <div class="form-group">
-                    <input type="password" id="register-password-confirm" placeholder="Confirmar Senha"
-                        class="form-input" required minlength="6" />
-                </div>
-                <button type="submit" class="btn btn-primary" style="margin-top: 1rem; width: 100%;">Cadastrar</button>
-            </form>
-        </div>
+            </div>
 
-        <!-- Sign In Container (Right) -->
-        <div class="form-container sign-in-container">
-            <form id="login-form" class="form-wrapper" onsubmit="handleLogin(event)">
-                <h1 class="auth-logo">Cruci<span>flix</span></h1>
-                <h1>Entrar</h1>
-                <div class="auth-social-container">
-                    <!-- Social icons removed -->
-                </div>
-                <span class="text-muted">ou use sua conta</span>
-                <div class="form-group">
-                    <input type="email" id="login-email" placeholder="Email" class="form-input" required />
-                </div>
-                <div class="form-group">
-                    <input type="password" id="login-password" placeholder="Senha" class="form-input" required />
-                </div>
-                <a href="#" onclick="handleForgotPassword(event)"
-                    style="margin: 1rem 0; font-size: 0.9rem; color: var(--color-text-muted); display: block;">Esqueceu
-                    sua senha?</a>
-                <button type="submit" class="btn btn-primary" style="width: 100%;">Entrar</button>
-            </form>
-        </div>
+            <!-- Form Panel -->
+            <div class="form-panel">
+                
+                <!-- Login Form -->
+                <div id="login-form" class="form-wrapper">
+                    <a href="dashboard.html" class="logo">
+                        <i class="fas fa-cross"></i>
+                        CruciFlix
+                    </a>
+                    <h1>Entrar</h1>
+                    <p class="form-subtitle">Acesse sua conta para continuar</p>
+                    
+                    <form onsubmit="handleLogin(event)">
+                        <div class="form-group">
+                            <input type="email" id="login-email" placeholder="Email" class="form-input" required autocomplete="email">
+                        </div>
+                        <div class="form-group">
+                            <input type="password" id="login-password" placeholder="Senha" class="form-input" required autocomplete="current-password">
+                        </div>
+                        <a href="#" onclick="handleForgotPassword(event)" class="form-link">Esqueceu sua senha?</a>
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-sign-in-alt"></i>&nbsp; Entrar
+                        </button>
+                    </form>
 
-        <!-- Overlay Container (Sliding) -->
-        <div class="overlay-container">
-            <div class="overlay">
-                <div class="overlay-panel overlay-left">
-                    <h1>Bem-vindo de volta!</h1>
-                    <p>Para se manter conectado conosco, faça login com suas informações pessoais</p>
-                    <button class="btn btn-ghost" id="signIn"
-                        style="border-color: white; color: white; margin-top: 1rem;">Entrar</button>
+                    <div class="mobile-toggle">
+                        <span>Não tem uma conta?</span>
+                        <a href="#" onclick="showRegister(); return false;">Cadastre-se</a>
+                    </div>
                 </div>
-                <div class="overlay-panel overlay-right">
-                    <h1>Olá, Amigo!</h1>
-                    <p>Insira seus dados pessoais e comece sua jornada de fé conosco</p>
-                    <button class="btn btn-ghost" id="signUp"
-                        style="border-color: white; color: white; margin-top: 1rem;">Cadastrar</button>
+
+                <!-- Plan Selection -->
+                <div id="plan-selection" class="form-wrapper">
+                    <a href="dashboard.html" class="logo">
+                        <i class="fas fa-cross"></i>
+                        CruciFlix
+                    </a>
+                    <h1>Escolha seu Plano</h1>
+                    <p class="form-subtitle">Selecione o plano ideal para você</p>
+                    
+                    <div class="plans-container">
+                        <div class="plan-option" onclick="selectPlan('free')" data-plan="free">
+                            <div class="plan-header-opt">
+                                <strong>Gratuito</strong>
+                                <span class="plan-price-opt">R$ 0</span>
+                            </div>
+                            <small>Conteúdo limitado • 1 perfil • Qualidade SD</small>
+                        </div>
+                        <div class="plan-option" onclick="selectPlan('basic')" data-plan="basic">
+                            <div class="plan-header-opt">
+                                <strong>Básico</strong>
+                                <span class="plan-price-opt">R$ 19,90/mês</span>
+                            </div>
+                            <small>Todo conteúdo • 2 perfis • Qualidade HD</small>
+                        </div>
+                        <div class="plan-option selected" onclick="selectPlan('standard')" data-plan="standard">
+                            <div class="plan-header-opt">
+                                <strong>Padrão</strong>
+                                <span class="plan-price-opt">R$ 29,90/mês</span>
+                            </div>
+                            <small>Todo conteúdo • 4 perfis • Full HD • Downloads</small>
+                            <span class="popular-badge">Mais Popular</span>
+                        </div>
+                        <div class="plan-option" onclick="selectPlan('premium')" data-plan="premium">
+                            <div class="plan-header-opt">
+                                <strong>Premium</strong>
+                                <span class="plan-price-opt">R$ 49,90/mês</span>
+                            </div>
+                            <small>Todo conteúdo • 5 perfis • 4K • Downloads • Exclusivos</small>
+                        </div>
+                    </div>
+                    
+                    <button type="button" class="btn-primary" onclick="goToRegisterForm()">
+                        Continuar <i class="fas fa-arrow-right"></i>
+                    </button>
+
+                    <div class="mobile-toggle">
+                        <span>Já tem uma conta?</span>
+                        <a href="#" onclick="showLogin(); return false;">Entrar</a>
+                    </div>
+                </div>
+                
+                <!-- Registration Form -->
+                <div id="register-form" class="form-wrapper">
+                    <a href="dashboard.html" class="logo">
+                        <i class="fas fa-cross"></i>
+                        CruciFlix
+                    </a>
+                    <h1>Criar Conta</h1>
+                    <p class="form-subtitle">
+                        Plano: <strong id="selected-plan-display">Padrão</strong>
+                        <a href="#" onclick="backToPlanSelection(event)" class="plan-change-link">Alterar</a>
+                    </p>
+                    <input type="hidden" id="selected-plan" value="standard">
+                    
+                    <form onsubmit="handleRegister(event)">
+                        <div class="form-group">
+                            <input type="text" id="register-name" placeholder="Nome completo" class="form-input" required autocomplete="name">
+                        </div>
+                        <div class="form-group">
+                            <input type="email" id="register-email" placeholder="Email" class="form-input" required autocomplete="email">
+                        </div>
+                        <div class="form-group">
+                            <input type="password" id="register-password" placeholder="Senha" class="form-input" required minlength="6" autocomplete="new-password">
+                        </div>
+                        <div class="form-group">
+                            <input type="password" id="register-password-confirm" placeholder="Confirmar senha" class="form-input" required minlength="6" autocomplete="new-password">
+                        </div>
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-user-plus"></i>&nbsp; Cadastrar
+                        </button>
+                    </form>
+
+                    <div class="mobile-toggle">
+                        <span>Já tem uma conta?</span>
+                        <a href="#" onclick="showLogin(); return false;">Entrar</a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -94,17 +838,33 @@
     <!-- Toast Container -->
     <div id="toast-container" class="toast-container"></div>
 
+    <!-- Corner Modal: small message panel (errors/success) -->
+    <div id="corner-modal" class="corner-modal" aria-live="polite" role="status" style="display:none">
+        <div class="cm-icon" id="corner-modal-icon">⚠️</div>
+        <div class="cm-content" id="corner-modal-content">Mensagem</div>
+        <button class="cm-close" id="corner-modal-close" aria-label="Fechar">×</button>
+    </div>
+
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 
-    <!-- App Scripts (Consolidated) -->
+    <!-- App Scripts -->
     <script src="../scripts/app-core.js"></script>
 
     <script>
         let isSubmitting = false;
+        let selectedPlanId = 'standard';
+        
+        const planNames = {
+            'free': 'Gratuito',
+            'basic': 'Básico',
+            'standard': 'Padrão',
+            'premium': 'Premium'
+        };
+        
         // Check if user is already logged in
         window.authModule.onAuthStateChanged((authState) => {
             if (authState.loggedIn && !isSubmitting) {
@@ -112,18 +872,70 @@
             }
         });
 
-        // Sliding Animation Logic
-        const signUpButton = document.getElementById('signUp');
-        const signInButton = document.getElementById('signIn');
-        const container = document.getElementById('auth-container');
+        // Corner modal helpers
+        const _cornerModal = document.getElementById('corner-modal');
+        const _cornerIcon = document.getElementById('corner-modal-icon');
+        const _cornerContent = document.getElementById('corner-modal-content');
+        const _cornerClose = document.getElementById('corner-modal-close');
+        let _cornerTimeout = null;
 
-        signUpButton.addEventListener('click', () => {
-            container.classList.add("right-panel-active");
-        });
+        function hideCornerModal() {
+            if (!_cornerModal) return;
+            _cornerModal.classList.remove('visible');
+            // hide after animation
+            setTimeout(() => {
+                if (_cornerModal) _cornerModal.style.display = 'none';
+            }, 280);
+            if (_cornerTimeout) { clearTimeout(_cornerTimeout); _cornerTimeout = null; }
+        }
 
-        signInButton.addEventListener('click', () => {
-            container.classList.remove("right-panel-active");
-        });
+        function showCornerModal(message, type = 'info', duration = 5000) {
+            if (!_cornerModal) return;
+            _cornerContent.textContent = message;
+            _cornerModal.style.display = 'flex';
+            _cornerModal.className = 'corner-modal type-' + (type || 'info') + ' visible';
+            // icon
+            if (_cornerIcon) {
+                if (type === 'success') _cornerIcon.textContent = '✔️';
+                else if (type === 'error') _cornerIcon.textContent = '⚠️';
+                else _cornerIcon.textContent = 'ℹ️';
+            }
+            if (_cornerTimeout) clearTimeout(_cornerTimeout);
+            _cornerTimeout = setTimeout(() => hideCornerModal(), duration);
+        }
+
+        if (_cornerClose) _cornerClose.addEventListener('click', hideCornerModal);
+
+        // Navigation functions
+        function showRegister() {
+            document.getElementById('auth-container').classList.add('show-register');
+            document.getElementById('auth-container').classList.remove('show-register-form');
+        }
+
+        function showLogin() {
+            document.getElementById('auth-container').classList.remove('show-register');
+            document.getElementById('auth-container').classList.remove('show-register-form');
+        }
+
+        // Plan selection functions
+        function selectPlan(planId) {
+            selectedPlanId = planId;
+            document.querySelectorAll('.plan-option').forEach(el => {
+                el.classList.remove('selected');
+            });
+            document.querySelector(`.plan-option[data-plan="${planId}"]`).classList.add('selected');
+        }
+        
+        function goToRegisterForm() {
+            document.getElementById('auth-container').classList.add('show-register-form');
+            document.getElementById('selected-plan').value = selectedPlanId;
+            document.getElementById('selected-plan-display').textContent = planNames[selectedPlanId];
+        }
+        
+        function backToPlanSelection(event) {
+            event.preventDefault();
+            document.getElementById('auth-container').classList.remove('show-register-form');
+        }
 
         // Handle login
         async function handleLogin(event) {
@@ -141,12 +953,14 @@
 
             if (result.success) {
                 window.uiModule.showToast('Login realizado com sucesso!', 'success');
+                showCornerModal('Login realizado com sucesso!', 'success');
                 setTimeout(() => {
-                    window.location.href = 'dashboard.html';
+                    window.location.href = 'select-profile.html';
                 }, 1000);
             } else {
                 isSubmitting = false;
                 window.uiModule.showToast('Erro: ' + result.error, 'error');
+                showCornerModal('Erro: ' + (result.error || 'Erro no login'), 'error');
             }
         }
 
@@ -159,9 +973,12 @@
             const email = document.getElementById('register-email').value;
             const password = document.getElementById('register-password').value;
             const passwordConfirm = document.getElementById('register-password-confirm').value;
+            const plan = document.getElementById('selected-plan').value;
 
             if (password !== passwordConfirm) {
+                isSubmitting = false;
                 window.uiModule.showToast('As senhas não coincidem', 'error');
+                showCornerModal('As senhas não coincidem', 'error');
                 return;
             }
 
@@ -169,16 +986,31 @@
 
             const result = await window.authModule.registerUser(email, password, name);
 
-            window.uiModule.hideLoading();
-
             if (result.success) {
-                window.uiModule.showToast('Conta criada com sucesso!', 'success');
+                // Update subscription with selected plan
+                await window.authModule.updateSubscription(plan);
+                
+                // Send email verification
+                try {
+                    const user = firebase.auth().currentUser;
+                    if (user) {
+                        await user.sendEmailVerification();
+                    }
+                } catch (verifyError) {
+                    console.error('Error sending verification email:', verifyError);
+                }
+                
+                window.uiModule.hideLoading();
+                window.uiModule.showToast('Conta criada! Verifique seu email.', 'success');
+                showCornerModal('Conta criada! Verifique seu email para ativar.', 'success');
                 setTimeout(() => {
-                    window.location.href = 'dashboard.html';
-                }, 1000);
+                    window.location.href = 'verify-email.html';
+                }, 1500);
             } else {
+                window.uiModule.hideLoading();
                 isSubmitting = false;
                 window.uiModule.showToast('Erro: ' + result.error, 'error');
+                showCornerModal('Erro: ' + (result.error || 'Erro ao cadastrar'), 'error');
             }
         }
 
@@ -190,6 +1022,7 @@
 
             if (!window.uiModule.isValidEmail(email)) {
                 window.uiModule.showToast('Email inválido', 'error');
+                showCornerModal('Email inválido', 'error');
                 return;
             }
 
@@ -199,8 +1032,10 @@
 
             if (result.success) {
                 window.uiModule.showToast('Email de recuperação enviado!', 'success');
+                showCornerModal('Email de recuperação enviado!', 'success');
             } else {
                 window.uiModule.showToast('Erro: ' + result.error, 'error');
+                showCornerModal('Erro: ' + (result.error || 'Erro ao solicitar recuperação'), 'error');
             }
         }
     </script>
