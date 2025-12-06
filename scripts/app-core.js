@@ -41,6 +41,27 @@ window.firebaseStorage = storage;
 // AUTHENTICATION MODULE
 // ============================================
 
+// Avatares pré-definidos temáticos
+const AVATARS = [
+    { id: 'avatar1', url: 'https://api.dicebear.com/7.x/initials/svg?seed=SA&backgroundColor=8b0000', name: 'Santo Agostinho' },
+    { id: 'avatar2', url: 'https://api.dicebear.com/7.x/initials/svg?seed=SF&backgroundColor=1a5f7a', name: 'São Francisco' },
+    { id: 'avatar3', url: 'https://api.dicebear.com/7.x/initials/svg?seed=MT&backgroundColor=6b4423', name: 'Madre Teresa' },
+    { id: 'avatar4', url: 'https://api.dicebear.com/7.x/initials/svg?seed=SJ&backgroundColor=2d4a3e', name: 'São João' },
+    { id: 'avatar5', url: 'https://api.dicebear.com/7.x/initials/svg?seed=SP&backgroundColor=4a235a', name: 'São Paulo' },
+    { id: 'avatar6', url: 'https://api.dicebear.com/7.x/initials/svg?seed=SM&backgroundColor=1b4f72', name: 'Santa Maria' },
+    { id: 'avatar7', url: 'https://api.dicebear.com/7.x/initials/svg?seed=PP&backgroundColor=7b241c', name: 'Papa Pio' },
+    { id: 'avatar8', url: 'https://api.dicebear.com/7.x/initials/svg?seed=SB&backgroundColor=0e6655', name: 'São Bento' },
+    { id: 'avatar9', url: 'https://api.dicebear.com/7.x/initials/svg?seed=ST&backgroundColor=5b2c6f', name: 'Santa Teresa' },
+    { id: 'avatar10', url: 'https://api.dicebear.com/7.x/initials/svg?seed=SL&backgroundColor=784212', name: 'São Lucas' },
+    { id: 'kids1', url: 'https://api.dicebear.com/7.x/fun-emoji/svg?seed=angel', name: 'Anjinho' },
+    { id: 'kids2', url: 'https://api.dicebear.com/7.x/fun-emoji/svg?seed=star', name: 'Estrelinha' },
+    { id: 'kids3', url: 'https://api.dicebear.com/7.x/fun-emoji/svg?seed=heart', name: 'Coração' },
+    { id: 'kids4', url: 'https://api.dicebear.com/7.x/fun-emoji/svg?seed=rainbow', name: 'Arco-íris' }
+];
+
+// Perfil atual selecionado (armazenado em sessionStorage)
+let currentProfile = null;
+
 // Register new user
 async function registerUser(email, password, displayName) {
     try {
@@ -49,14 +70,31 @@ async function registerUser(email, password, displayName) {
 
         await user.updateProfile({ displayName: displayName });
 
+        // Criar documento do usuário
         await firebaseDB.collection('users').doc(user.uid).set({
             uid: user.uid,
             email: email,
             displayName: displayName,
             role: 'user',
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            preferences: { kidsPin: '' }
+            subscription: {
+                plan: 'free',
+                startDate: firebase.firestore.FieldValue.serverTimestamp(),
+                endDate: null
+            },
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
+
+        // Criar perfil padrão automaticamente
+        const defaultProfile = {
+            name: displayName,
+            avatar: AVATARS[0].url,
+            isKids: false,
+            pin: '',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        await firebaseDB.collection('users').doc(user.uid)
+            .collection('profiles').add(defaultProfile);
 
         console.log('✅ User registered successfully:', user.uid);
         return { success: true, user: user };
@@ -177,6 +215,239 @@ async function updateUserProfile(updates) {
     }
 }
 
+// ============================================
+// PROFILE MANAGEMENT (Multi-profiles per account)
+// ============================================
+
+// Get all profiles for current user
+async function getProfiles() {
+    try {
+        const user = getCurrentUser();
+        if (!user) return [];
+
+        const snapshot = await firebaseDB.collection('users').doc(user.uid)
+            .collection('profiles').orderBy('createdAt', 'asc').get();
+
+        const profiles = [];
+        snapshot.forEach(doc => {
+            profiles.push({ id: doc.id, ...doc.data() });
+        });
+
+        return profiles;
+    } catch (error) {
+        console.error('❌ Error fetching profiles:', error);
+        return [];
+    }
+}
+
+// Create new profile
+async function createProfile(profileData) {
+    try {
+        const user = getCurrentUser();
+        if (!user) throw new Error('Usuário não autenticado');
+
+        // Verificar limite de perfis (máximo 5)
+        const profiles = await getProfiles();
+        if (profiles.length >= 5) {
+            return { success: false, error: 'Limite máximo de 5 perfis atingido' };
+        }
+
+        const newProfile = {
+            name: profileData.name,
+            avatar: profileData.avatar || AVATARS[0].url,
+            isKids: profileData.isKids || false,
+            pin: profileData.pin || '',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        const docRef = await firebaseDB.collection('users').doc(user.uid)
+            .collection('profiles').add(newProfile);
+
+        console.log('✅ Profile created:', docRef.id);
+        return { success: true, id: docRef.id };
+    } catch (error) {
+        console.error('❌ Error creating profile:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+// Update profile
+async function updateProfile(profileId, updates) {
+    try {
+        const user = getCurrentUser();
+        if (!user) throw new Error('Usuário não autenticado');
+
+        await firebaseDB.collection('users').doc(user.uid)
+            .collection('profiles').doc(profileId).update(updates);
+
+        console.log('✅ Profile updated:', profileId);
+        return { success: true };
+    } catch (error) {
+        console.error('❌ Error updating profile:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+// Delete profile
+async function deleteProfile(profileId) {
+    try {
+        const user = getCurrentUser();
+        if (!user) throw new Error('Usuário não autenticado');
+
+        // Verificar se é o único perfil
+        const profiles = await getProfiles();
+        if (profiles.length <= 1) {
+            return { success: false, error: 'Não é possível excluir o único perfil' };
+        }
+
+        await firebaseDB.collection('users').doc(user.uid)
+            .collection('profiles').doc(profileId).delete();
+
+        console.log('✅ Profile deleted:', profileId);
+        return { success: true };
+    } catch (error) {
+        console.error('❌ Error deleting profile:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+// Set current profile (store in sessionStorage)
+function setCurrentProfile(profile) {
+    currentProfile = profile;
+    sessionStorage.setItem('currentProfile', JSON.stringify(profile));
+}
+
+// Get current profile
+function getCurrentProfile() {
+    if (!currentProfile) {
+        const stored = sessionStorage.getItem('currentProfile');
+        if (stored) {
+            currentProfile = JSON.parse(stored);
+        }
+    }
+    return currentProfile;
+}
+
+// Clear current profile (on logout or profile switch)
+function clearCurrentProfile() {
+    currentProfile = null;
+    sessionStorage.removeItem('currentProfile');
+}
+
+// Verify kids PIN
+async function verifyKidsPin(profileId, pin) {
+    try {
+        const user = getCurrentUser();
+        if (!user) return false;
+
+        const doc = await firebaseDB.collection('users').doc(user.uid)
+            .collection('profiles').doc(profileId).get();
+
+        if (doc.exists) {
+            const profile = doc.data();
+            return profile.pin === pin;
+        }
+        return false;
+    } catch (error) {
+        console.error('❌ Error verifying PIN:', error);
+        return false;
+    }
+}
+
+// Get available avatars
+function getAvatars(isKids = false) {
+    if (isKids) {
+        return AVATARS.filter(a => a.id.startsWith('kids'));
+    }
+    return AVATARS;
+}
+
+// ============================================
+// SUBSCRIPTION MANAGEMENT (Visual/Simulation)
+// ============================================
+
+const SUBSCRIPTION_PLANS = [
+    {
+        id: 'free',
+        name: 'Gratuito',
+        price: 0,
+        features: ['Acesso limitado', '1 perfil', 'Qualidade SD', 'Com anúncios'],
+        maxProfiles: 1,
+        quality: 'SD'
+    },
+    {
+        id: 'basic',
+        name: 'Básico',
+        price: 19.90,
+        features: ['Catálogo completo', '2 perfis', 'Qualidade HD', 'Sem anúncios'],
+        maxProfiles: 2,
+        quality: 'HD'
+    },
+    {
+        id: 'standard',
+        name: 'Padrão',
+        price: 29.90,
+        features: ['Catálogo completo', '4 perfis', 'Qualidade Full HD', 'Sem anúncios', 'Download offline'],
+        maxProfiles: 4,
+        quality: 'FHD'
+    },
+    {
+        id: 'premium',
+        name: 'Premium',
+        price: 49.90,
+        features: ['Catálogo completo', '5 perfis', 'Qualidade 4K', 'Sem anúncios', 'Download offline', 'Conteúdo exclusivo'],
+        maxProfiles: 5,
+        quality: '4K'
+    }
+];
+
+// Get all subscription plans
+function getSubscriptionPlans() {
+    return SUBSCRIPTION_PLANS;
+}
+
+// Get user subscription
+async function getUserSubscription() {
+    try {
+        const user = getCurrentUser();
+        if (!user) return null;
+
+        const doc = await firebaseDB.collection('users').doc(user.uid).get();
+        if (doc.exists) {
+            return doc.data().subscription || { plan: 'free' };
+        }
+        return { plan: 'free' };
+    } catch (error) {
+        console.error('❌ Error fetching subscription:', error);
+        return { plan: 'free' };
+    }
+}
+
+// Update subscription (simulation)
+async function updateSubscription(planId) {
+    try {
+        const user = getCurrentUser();
+        if (!user) throw new Error('Usuário não autenticado');
+
+        const plan = SUBSCRIPTION_PLANS.find(p => p.id === planId);
+        if (!plan) throw new Error('Plano inválido');
+
+        await firebaseDB.collection('users').doc(user.uid).update({
+            subscription: {
+                plan: planId,
+                startDate: firebase.firestore.FieldValue.serverTimestamp(),
+                endDate: null // Em produção, calcular data de expiração
+            }
+        });
+
+        console.log('✅ Subscription updated to:', planId);
+        return { success: true };
+    } catch (error) {
+        console.error('❌ Error updating subscription:', error);
+        return { success: false, error: error.message };
+    }
+}
+
 // Export auth module
 window.authModule = {
     registerUser,
@@ -188,7 +459,23 @@ window.authModule = {
     requireAuth,
     requireAdmin,
     resetPassword,
-    updateUserProfile
+    updateUserProfile,
+    // Profile management
+    getProfiles,
+    createProfile,
+    updateProfile,
+    deleteProfile,
+    setCurrentProfile,
+    getCurrentProfile,
+    clearCurrentProfile,
+    verifyKidsPin,
+    getAvatars,
+    AVATARS,
+    // Subscription
+    getSubscriptionPlans,
+    getUserSubscription,
+    updateSubscription,
+    SUBSCRIPTION_PLANS
 };
 
 // ============================================
