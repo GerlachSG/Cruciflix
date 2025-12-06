@@ -1,17 +1,36 @@
-# Arquivos sensíveis/internos
-INSTRUCTIONS.md
+# Ignore JSON config files
+*.json
+
+# Ignore firebase and firestore rules
+*.rules
 firestore.rules
+storage.rules
+.firebaserc
 
-# Dependências
+# Ignore functions folder (server-side code)
+/functions/
+functions/
+
+# Ignore images and image folders
+imgs/
+imgs/**
+images/
+assets/img/
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+
+# Ignore Markdown files by default, but keep README.md
+*.md
+!README.md
+
+# Common developer ignores
 node_modules/
-
-# Logs
-*.log
-
-# Sistema
 .DS_Store
-Thumbs.db
 
-# IDE
+# Local editor/workspace files
 .vscode/
 .idea/
+*.log
