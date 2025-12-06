@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Cruciflix - Verificar Email">
+    <title>Verificar Email - Cruciflix</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary: #00a89d;
+            --primary-glow: rgba(0, 168, 157, 0.4);
+            --secondary: #d4af37;
+            --bg-dark: #0a0a0a;
+            --bg-card: rgba(15, 15, 20, 0.85);
+            --text-primary: #ffffff;
+            --text-muted: #888;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            min-height: 100vh;
+            overflow-x: hidden;
+            color: var(--text-primary);
+        }
+
+        /* Animated Background */
+        .bg-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .bg-overlay {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                135deg,
+                rgba(0, 0, 0, 0.95) 0%,
+                rgba(0, 20, 20, 0.8) 50%,
+                rgba(0, 0, 0, 0.95) 100%
+            );
+        }
+
+        .light-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.5;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        .light-orb-1 {
+            width: 400px;
+            height: 400px;
+            background: var(--primary-glow);
+            top: -100px;
+            right: -100px;
+        }
+
+        .light-orb-2 {
+            width: 300px;
+            height: 300px;
+            background: rgba(212, 175, 55, 0.3);
+            bottom: -50px;
+            left: -50px;
+            animation-delay: -4s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-30px) scale(1.1); }
+        }
+
+        /* Main Container */
+        .verify-wrapper {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .verify-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 50px 40px;
+            max-width: 480px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 
+                0 25px 80px rgba(0, 0, 0, 0.5),
+                0 0 100px rgba(0, 168, 157, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .verify-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(0, 168, 157, 0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        /* Logo */
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-decoration: none;
+            margin-bottom: 30px;
+        }
+
+        .logo i {
+            font-size: 1.5rem;
+        }
+
+        /* Icon */
+        .verify-icon {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, var(--primary) 0%, #00c4b8 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+            position: relative;
+        }
+
+        .verify-icon i {
+            font-size: 45px;
+            color: #fff;
+        }
+
+        .verify-icon::after {
+            content: '';
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            border: 2px solid rgba(0, 168, 157, 0.3);
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.5; }
+        }
+
+        /* Text */
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.8) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .email-display {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 15px 20px;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .email-display i {
+            color: var(--primary);
+        }
+
+        .email-display span {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        /* Buttons */
+        .btn-primary {
+            width: 100%;
+            padding: 16px 28px;
+            background: linear-gradient(135deg, var(--primary) 0%, #00c4b8 100%);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(0, 168, 157, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            width: 100%;
+            padding: 14px 28px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--primary);
+        }
+
+        /* Status messages */
+        .status-message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .status-message.success {
+            background: rgba(0, 200, 150, 0.15);
+            border: 1px solid rgba(0, 200, 150, 0.3);
+            color: #00c896;
+            display: block;
+        }
+
+        .status-message.error {
+            background: rgba(255, 80, 80, 0.15);
+            border: 1px solid rgba(255, 80, 80, 0.3);
+            color: #ff6b6b;
+            display: block;
+        }
+
+        .status-message.info {
+            background: rgba(0, 160, 220, 0.15);
+            border: 1px solid rgba(0, 160, 220, 0.3);
+            color: #00a0dc;
+            display: block;
+        }
+
+        /* Timer */
+        .resend-timer {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-top: 15px;
+        }
+
+        /* Verified state */
+        .verified-state {
+            display: none;
+        }
+
+        .verified-state.active {
+            display: block;
+        }
+
+        .pending-state.hidden {
+            display: none;
+        }
+
+        .check-icon {
+            color: #00c896;
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+
+        /* Links */
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            text-decoration: none;
+            margin-top: 25px;
+            transition: color 0.3s;
+        }
+
+        .back-link:hover {
+            color: var(--primary);
+        }
+
+        /* Warning box */
+        .warning-box {
+            background: rgba(255, 180, 50, 0.1);
+            border: 1px solid rgba(255, 180, 50, 0.3);
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.85rem;
+            color: #ffb432;
+            text-align: left;
+        }
+
+        .warning-box i {
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .verify-card {
+                padding: 40px 25px;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .verify-icon {
+                width: 80px;
+                height: 80px;
+            }
+
+            .verify-icon i {
+                font-size: 35px;
+            }
+
+            .verify-icon::after {
+                width: 100px;
+                height: 100px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Animated Background -->
+    <div class="bg-container">
+        <div class="bg-overlay"></div>
+        <div class="light-orb light-orb-1"></div>
+        <div class="light-orb light-orb-2"></div>
+    </div>
+
+    <div class="verify-wrapper">
+        <div class="verify-card">
+            <a href="index.html" class="logo">
+                <i class="fas fa-cross"></i>
+                CruciFlix
+            </a>
+
+            <!-- Pending Verification State -->
+            <div class="pending-state" id="pending-state">
+                <div class="verify-icon">
+                    <i class="fas fa-envelope"></i>
+                </div>
+
+                <h1>Verifique seu Email</h1>
+                <p class="subtitle">
+                    Enviamos um link de verificação para o seu email. 
+                    <strong>Sua conta só será ativada após clicar no link.</strong>
+                </p>
+
+                <div class="warning-box">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Se você sair desta página sem verificar, precisará se cadastrar novamente.</span>
+                </div>
+
+                <div class="email-display">
+                    <i class="fas fa-at"></i>
+                    <span id="user-email">carregando...</span>
+                </div>
+
+                <div class="status-message" id="status-message"></div>
+
+                <button class="btn-primary" id="check-status-btn" onclick="checkVerificationStatus()">
+                    <i class="fas fa-sync-alt"></i>
+                    Já verifiquei, continuar
+                </button>
+
+                <button class="btn-secondary" id="resend-btn" onclick="resendVerificationEmail()">
+                    <i class="fas fa-paper-plane"></i>
+                    Reenviar email de verificação
+                </button>
+
+                <p class="resend-timer" id="resend-timer"></p>
+
+                <a href="#" class="back-link" onclick="handleCancelRegistration(); return false;">
+                    <i class="fas fa-times"></i>
+                    Cancelar cadastro
+                </a>
+            </div>
+
+            <!-- Verified State -->
+            <div class="verified-state" id="verified-state">
+                <i class="fas fa-check-circle check-icon"></i>
+                
+                <h1>Email Verificado!</h1>
+                <p class="subtitle">
+                    Sua conta foi verificada com sucesso. 
+                    Agora você pode aproveitar todo o conteúdo do CruciFlix.
+                </p>
+
+                <button class="btn-primary" onclick="goToDashboard()">
+                    <i class="fas fa-play"></i>
+                    Começar a assistir
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+
+    <!-- App Scripts -->
+    <script src="../scripts/app-core.js"></script>
+
+    <script>
+        let resendCooldown = 0;
+        let cooldownInterval = null;
+        let isVerified = false;
+
+        // Initialize page
+        window.authModule.onAuthStateChanged((authState) => {
+            if (!authState.loggedIn) {
+                // Not logged in, redirect to login
+                window.location.href = 'index.html';
+                return;
+            }
+
+            const user = firebase.auth().currentUser;
+            if (user) {
+                document.getElementById('user-email').textContent = user.email;
+
+                if (user.emailVerified) {
+                    isVerified = true;
+                    showVerifiedState();
+                }
+            }
+        });
+
+        // Warn user before leaving if not verified (account will be deleted)
+        window.addEventListener('beforeunload', (e) => {
+            if (!isVerified) {
+                e.preventDefault();
+                e.returnValue = 'Sua conta não foi verificada. Se sair, precisará se cadastrar novamente.';
+                return e.returnValue;
+            }
+        });
+
+        // Check verification status
+        async function checkVerificationStatus() {
+            const btn = document.getElementById('check-status-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
+
+            try {
+                const user = firebase.auth().currentUser;
+                if (user) {
+                    // Reload user to get fresh emailVerified status
+                    await user.reload();
+                    
+                    if (user.emailVerified) {
+                        isVerified = true;
+                        showVerifiedState();
+                        showStatus('Email verificado com sucesso!', 'success');
+                    } else {
+                        showStatus('Email ainda não verificado. Verifique sua caixa de entrada e spam.', 'info');
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking verification:', error);
+                showStatus('Erro ao verificar status. Tente novamente.', 'error');
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-sync-alt"></i> Já verifiquei, continuar';
+        }
+
+        // Resend verification email
+        async function resendVerificationEmail() {
+            if (resendCooldown > 0) return;
+
+            const btn = document.getElementById('resend-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+
+            try {
+                const user = firebase.auth().currentUser;
+                if (user) {
+                    await user.sendEmailVerification();
+                    
+                    showStatus('Email de verificação reenviado! Verifique sua caixa de entrada e spam.', 'success');
+                    startResendCooldown(60);
+                }
+            } catch (error) {
+                console.error('Error resending email:', error);
+                
+                if (error.code === 'auth/too-many-requests') {
+                    showStatus('⚠️ Muitas tentativas! O Firebase bloqueou temporariamente. Aguarde 5 minutos e tente novamente.', 'error');
+                    startResendCooldown(300); // 5 minutes cooldown
+                } else {
+                    showStatus('Erro ao reenviar email. Tente novamente mais tarde.', 'error');
+                    startResendCooldown(30);
+                }
+            }
+
+            btn.disabled = resendCooldown > 0;
+            if (!btn.disabled) {
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i> Reenviar email de verificação';
+            }
+        }
+
+        // Start cooldown timer
+        function startResendCooldown(seconds) {
+            resendCooldown = seconds;
+            const btn = document.getElementById('resend-btn');
+            const timer = document.getElementById('resend-timer');
+
+            btn.disabled = true;
+
+            if (cooldownInterval) clearInterval(cooldownInterval);
+
+            cooldownInterval = setInterval(() => {
+                resendCooldown--;
+                timer.textContent = `Aguarde ${resendCooldown}s para reenviar`;
+
+                if (resendCooldown <= 0) {
+                    clearInterval(cooldownInterval);
+                    btn.disabled = false;
+                    timer.textContent = '';
+                }
+            }, 1000);
+        }
+
+        // Show status message
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('status-message');
+            statusEl.textContent = message;
+            statusEl.className = 'status-message ' + type;
+        }
+
+        // Show verified state
+        function showVerifiedState() {
+            document.getElementById('pending-state').classList.add('hidden');
+            document.getElementById('verified-state').classList.add('active');
+        }
+
+        // Go to dashboard
+        function goToDashboard() {
+            window.location.href = 'select-profile.html';
+        }
+
+        // Handle cancel/logout - DELETE unverified account
+        async function handleCancelRegistration() {
+            if (isVerified) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            const confirmDelete = confirm(
+                'Sua conta ainda não foi verificada.\n\n' +
+                'Se sair agora, sua conta será cancelada e você precisará se cadastrar novamente.\n\n' +
+                'Deseja realmente cancelar o cadastro?'
+            );
+
+            if (confirmDelete) {
+                try {
+                    const user = firebase.auth().currentUser;
+                    if (user && !user.emailVerified) {
+                        // Delete user document from Firestore
+                        try {
+                            await firebase.firestore().collection('users').doc(user.uid).delete();
+                        } catch (e) {
+                            console.log('No user doc to delete or error:', e);
+                        }
+                        
+                        // Delete the Firebase Auth account
+                        await user.delete();
+                        
+                        showStatus('Cadastro cancelado.', 'info');
+                    }
+                } catch (error) {
+                    console.error('Error deleting account:', error);
+                    // If delete fails (e.g., requires recent login), just sign out
+                    await window.authModule.logoutUser();
+                }
+                
+                window.location.href = 'index.html';
+            }
+        }
+    </script>
+</body>
+
+</html>
