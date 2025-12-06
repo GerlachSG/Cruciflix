@@ -6,8 +6,12 @@ Bem-vindo ao **Cruciflix**, uma plataforma de streaming com conteúdo católico 
 
 ## 🚀 Como Usar
 
+### Entrando no Website
+1. Entre no Website: https://gerlachsg.github.io/Cruciflix/pages/index
+
 ### Criar Conta
 1. Na página inicial, clique em **"Cadastrar"**
+2. Escolha um plano de assinatura
 2. Preencha nome, email e senha
 3. Clique em **"Cadastrar"**
 4. Verifique seu email
