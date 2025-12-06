@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Cruciflix - Selecionar Perfil">
+    <title>Quem está assistindo? - Cruciflix</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="../styles/main.css">
+    <link rel="stylesheet" href="../styles/profiles.css">
+</head>
+
+<body class="profile-select-body">
+
+    <!-- Header simplificado -->
+    <header class="profile-header">
+        <div class="logo">Cruci<span class="accent">flix</span></div>
+    </header>
+
+    <!-- Tela principal de seleção -->
+    <main class="profile-select-container" id="profile-select-screen">
+        <h1 class="profile-title">Quem está assistindo?</h1>
+        
+        <div class="profiles-grid" id="profiles-grid">
+            <!-- Perfis carregados dinamicamente -->
+        </div>
+
+        <button class="btn btn-ghost manage-profiles-btn" id="manage-profiles-btn">
+            Gerenciar Perfis
+        </button>
+    </main>
+
+    <!-- Tela de gerenciamento de perfis -->
+    <main class="profile-select-container hidden" id="manage-profiles-screen">
+        <h1 class="profile-title">Gerenciar Perfis</h1>
+        
+        <div class="profiles-grid" id="manage-profiles-grid">
+            <!-- Perfis com opção de editar -->
+        </div>
+
+        <button class="btn btn-primary" id="done-managing-btn">Concluído</button>
+    </main>
+
+    <!-- Modal de criar/editar perfil -->
+    <div class="modal" id="profile-modal" style="display: none;">
+        <div class="modal-content profile-modal-content">
+            <button class="modal-close" onclick="closeProfileModal()">&times;</button>
+            
+            <h2 id="profile-modal-title">Adicionar Perfil</h2>
+            
+            <form id="profile-form" onsubmit="handleProfileSubmit(event)">
+                <input type="hidden" id="edit-profile-id" value="">
+                
+                <!-- Avatar Selection -->
+                <div class="avatar-section">
+                    <div class="current-avatar" id="current-avatar">
+                        <img src="" alt="Avatar" id="selected-avatar-img">
+                    </div>
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="toggleAvatarGallery()">
+                        Trocar Avatar
+                    </button>
+                </div>
+
+                <div class="avatar-gallery hidden" id="avatar-gallery">
+                    <h3>Escolha um avatar</h3>
+                    <div class="avatars-grid" id="avatars-grid">
+                        <!-- Avatares carregados dinamicamente -->
+                    </div>
+                </div>
+
+                <!-- Nome do perfil -->
+                <div class="form-group">
+                    <label class="form-label">Nome do Perfil</label>
+                    <input type="text" id="profile-name" class="form-input" placeholder="Digite um nome" required maxlength="20">
+                </div>
+
+                <!-- Toggle Kids -->
+                <div class="form-group kids-toggle-group">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="is-kids-profile" onchange="toggleKidsOptions()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <div class="kids-label">
+                        <span class="kids-icon">👶</span>
+                        <div>
+                            <strong>Perfil Infantil</strong>
+                            <small>Apenas conteúdo seguro para crianças</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PIN para Kids (aparece apenas se não for kids) -->
+                <div class="form-group pin-group" id="pin-group" style="display: none;">
+                    <label class="form-label">PIN de Segurança (4 dígitos)</label>
+                    <input type="password" id="profile-pin" class="form-input pin-input" placeholder="••••" maxlength="4" pattern="[0-9]{4}">
+                    <small class="form-hint">Necessário para acessar este perfil adulto a partir de um perfil kids</small>
+                </div>
+
+                <div class="profile-form-actions">
+                    <button type="button" class="btn btn-ghost" onclick="closeProfileModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="save-profile-btn">Salvar</button>
+                </div>
+
+                <!-- Botão de excluir (só para edição) -->
+                <button type="button" class="btn btn-danger delete-profile-btn hidden" id="delete-profile-btn" onclick="confirmDeleteProfile()">
+                    Excluir Perfil
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de PIN -->
+    <div class="modal" id="pin-modal" style="display: none;">
+        <div class="modal-content pin-modal-content">
+            <h2>Digite o PIN</h2>
+            <p class="pin-modal-text">Este perfil está protegido por PIN</p>
+            
+            <div class="pin-input-group">
+                <input type="password" class="pin-digit" maxlength="1" data-index="0" inputmode="numeric">
+                <input type="password" class="pin-digit" maxlength="1" data-index="1" inputmode="numeric">
+                <input type="password" class="pin-digit" maxlength="1" data-index="2" inputmode="numeric">
+                <input type="password" class="pin-digit" maxlength="1" data-index="3" inputmode="numeric">
+            </div>
+            
+            <p class="pin-error hidden" id="pin-error">PIN incorreto</p>
+            
+            <div class="pin-modal-actions">
+                <button class="btn btn-ghost" onclick="closePinModal()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+
+    <!-- App Scripts -->
+    <script src="../scripts/app-core.js"></script>
+
+    <script>
+        let profiles = [];
+        let isManaging = false;
+        let selectedAvatar = null;
+        let pendingProfile = null;
+
+        // Check auth and load profiles
+        window.authModule.onAuthStateChanged(async (authState) => {
+            if (!authState.loggedIn) {
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            // Check if email is verified
+            const user = firebase.auth().currentUser;
+            if (user && !user.emailVerified) {
+                window.location.href = 'verify-email.html';
+                return;
+            }
+            
+            await loadProfiles();
+        });
+
+        // Load profiles
+        async function loadProfiles() {
+            profiles = await window.authModule.getProfiles();
+            renderProfiles();
+        }
+
+        // Render profiles grid
+        function renderProfiles() {
+            const grid = document.getElementById('profiles-grid');
+            const manageGrid = document.getElementById('manage-profiles-grid');
+            
+            // Clear grids
+            grid.innerHTML = '';
+            manageGrid.innerHTML = '';
+
+            profiles.forEach(profile => {
+                // Main grid
+                const card = createProfileCard(profile, false);
+                grid.appendChild(card);
+
+                // Manage grid
+                const manageCard = createProfileCard(profile, true);
+                manageGrid.appendChild(manageCard);
+            });
+
+            // Add "+" button if less than 5 profiles
+            if (profiles.length < 5) {
+                const addCard = document.createElement('div');
+                addCard.className = 'profile-card add-profile-card';
+                addCard.onclick = () => openProfileModal();
+                addCard.innerHTML = `
+                    <div class="profile-avatar add-avatar">
+                        <span>+</span>
+                    </div>
+                    <span class="profile-name">Adicionar Perfil</span>
+                `;
+                grid.appendChild(addCard);
+                manageGrid.appendChild(addCard.cloneNode(true));
+                manageGrid.lastChild.onclick = () => openProfileModal();
+            }
+        }
+
+        // Create profile card
+        function createProfileCard(profile, isManageMode) {
+            const card = document.createElement('div');
+            card.className = `profile-card ${profile.isKids ? 'kids-profile' : ''}`;
+            
+            if (isManageMode) {
+                card.onclick = () => openProfileModal(profile);
+                card.innerHTML = `
+                    <div class="profile-avatar">
+                        <img src="${profile.avatar}" alt="${profile.name}">
+                        <div class="edit-overlay">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <span class="profile-name">${profile.name}</span>
+                    ${profile.isKids ? '<span class="kids-badge">KIDS</span>' : ''}
+                `;
+            } else {
+                card.onclick = () => selectProfile(profile);
+                card.innerHTML = `
+                    <div class="profile-avatar">
+                        <img src="${profile.avatar}" alt="${profile.name}">
+                    </div>
+                    <span class="profile-name">${profile.name}</span>
+                    ${profile.isKids ? '<span class="kids-badge">KIDS</span>' : ''}
+                `;
+            }
+
+            return card;
+        }
+
+        // Select profile
+        async function selectProfile(profile) {
+            // Se for perfil kids, vai direto
+            if (profile.isKids) {
+                window.authModule.setCurrentProfile(profile);
+                window.location.href = 'catalogo.html';
+                return;
+            }
+
+            // Se o perfil atual é kids e está tentando acessar perfil adulto com PIN
+            const currentProfile = window.authModule.getCurrentProfile();
+            if (profile.pin && profile.pin.length === 4) {
+                pendingProfile = profile;
+                openPinModal();
+                return;
+            }
+
+            // Acesso direto
+            window.authModule.setCurrentProfile(profile);
+            window.location.href = 'dashboard.html';
+        }
+
+        // Toggle manage mode
+        document.getElementById('manage-profiles-btn').onclick = () => {
+            document.getElementById('profile-select-screen').classList.add('hidden');
+            document.getElementById('manage-profiles-screen').classList.remove('hidden');
+            isManaging = true;
+        };
+
+        document.getElementById('done-managing-btn').onclick = () => {
+            document.getElementById('manage-profiles-screen').classList.add('hidden');
+            document.getElementById('profile-select-screen').classList.remove('hidden');
+            isManaging = false;
+        };
+
+        // Open profile modal (create or edit)
+        function openProfileModal(profile = null) {
+            const modal = document.getElementById('profile-modal');
+            const title = document.getElementById('profile-modal-title');
+            const form = document.getElementById('profile-form');
+            const deleteBtn = document.getElementById('delete-profile-btn');
+            const avatars = window.authModule.getAvatars();
+
+            // Reset form
+            form.reset();
+            document.getElementById('edit-profile-id').value = '';
+
+            if (profile) {
+                // Edit mode
+                title.textContent = 'Editar Perfil';
+                document.getElementById('edit-profile-id').value = profile.id;
+                document.getElementById('profile-name').value = profile.name;
+                document.getElementById('is-kids-profile').checked = profile.isKids;
+                document.getElementById('profile-pin').value = profile.pin || '';
+                selectedAvatar = profile.avatar;
+                deleteBtn.classList.remove('hidden');
+            } else {
+                // Create mode
+                title.textContent = 'Adicionar Perfil';
+                selectedAvatar = avatars[0].url;
+                deleteBtn.classList.add('hidden');
+            }
+
+            // Update avatar preview
+            document.getElementById('selected-avatar-img').src = selectedAvatar;
+
+            // Load avatar gallery
+            loadAvatarGallery();
+
+            // Toggle kids options
+            toggleKidsOptions();
+
+            modal.style.display = 'flex';
+        }
+
+        function closeProfileModal() {
+            document.getElementById('profile-modal').style.display = 'none';
+            document.getElementById('avatar-gallery').classList.add('hidden');
+        }
+
+        // Load avatar gallery
+        function loadAvatarGallery() {
+            const grid = document.getElementById('avatars-grid');
+            const isKids = document.getElementById('is-kids-profile').checked;
+            const avatars = window.authModule.getAvatars(isKids);
+
+            grid.innerHTML = '';
+            avatars.forEach(avatar => {
+                const item = document.createElement('div');
+                item.className = `avatar-item ${selectedAvatar === avatar.url ? 'selected' : ''}`;
+                item.onclick = () => selectAvatarItem(avatar.url);
+                item.innerHTML = `<img src="${avatar.url}" alt="${avatar.name}">`;
+                grid.appendChild(item);
+            });
+        }
+
+        function toggleAvatarGallery() {
+            const gallery = document.getElementById('avatar-gallery');
+            gallery.classList.toggle('hidden');
+            if (!gallery.classList.contains('hidden')) {
+                loadAvatarGallery();
+            }
+        }
+
+        function selectAvatarItem(avatarUrl) {
+            selectedAvatar = avatarUrl;
+            document.getElementById('selected-avatar-img').src = avatarUrl;
+            
+            // Update selection visual
+            document.querySelectorAll('.avatar-item').forEach(item => {
+                item.classList.remove('selected');
+                if (item.querySelector('img').src === avatarUrl) {
+                    item.classList.add('selected');
+                }
+            });
+        }
+
+        function toggleKidsOptions() {
+            const isKids = document.getElementById('is-kids-profile').checked;
+            const pinGroup = document.getElementById('pin-group');
+            
+            // Mostrar PIN apenas para perfis NÃO kids
+            pinGroup.style.display = isKids ? 'none' : 'block';
+            
+            // Recarregar galeria de avatares
+            if (!document.getElementById('avatar-gallery').classList.contains('hidden')) {
+                loadAvatarGallery();
+            }
+        }
+
+        // Handle profile form submit
+        async function handleProfileSubmit(event) {
+            event.preventDefault();
+
+            const profileId = document.getElementById('edit-profile-id').value;
+            const name = document.getElementById('profile-name').value.trim();
+            const isKids = document.getElementById('is-kids-profile').checked;
+            const pin = document.getElementById('profile-pin').value;
+
+            if (!name) {
+                window.uiModule.showToast('Digite um nome para o perfil', 'error');
+                return;
+            }
+
+            const profileData = {
+                name: name,
+                avatar: selectedAvatar,
+                isKids: isKids,
+                pin: isKids ? '' : pin
+            };
+
+            window.uiModule.showLoading();
+
+            let result;
+            if (profileId) {
+                result = await window.authModule.updateProfile(profileId, profileData);
+            } else {
+                result = await window.authModule.createProfile(profileData);
+            }
+
+            window.uiModule.hideLoading();
+
+            if (result.success) {
+                window.uiModule.showToast(profileId ? 'Perfil atualizado!' : 'Perfil criado!', 'success');
+                closeProfileModal();
+                await loadProfiles();
+            } else {
+                window.uiModule.showToast(result.error, 'error');
+            }
+        }
+
+        // Confirm delete profile
+        async function confirmDeleteProfile() {
+            const profileId = document.getElementById('edit-profile-id').value;
+            
+            if (!confirm('Tem certeza que deseja excluir este perfil? Esta ação não pode ser desfeita.')) {
+                return;
+            }
+
+            window.uiModule.showLoading();
+            const result = await window.authModule.deleteProfile(profileId);
+            window.uiModule.hideLoading();
+
+            if (result.success) {
+                window.uiModule.showToast('Perfil excluído!', 'success');
+                closeProfileModal();
+                await loadProfiles();
+            } else {
+                window.uiModule.showToast(result.error, 'error');
+            }
+        }
+
+        // PIN Modal
+        function openPinModal() {
+            const modal = document.getElementById('pin-modal');
+            modal.style.display = 'flex';
+            
+            // Clear inputs
+            document.querySelectorAll('.pin-digit').forEach(input => {
+                input.value = '';
+            });
+            document.getElementById('pin-error').classList.add('hidden');
+            
+            // Focus first input
+            document.querySelector('.pin-digit[data-index="0"]').focus();
+        }
+
+        function closePinModal() {
+            document.getElementById('pin-modal').style.display = 'none';
+            pendingProfile = null;
+        }
+
+        // PIN input handling
+        document.querySelectorAll('.pin-digit').forEach(input => {
+            input.addEventListener('input', function() {
+                const index = parseInt(this.dataset.index);
+                
+                if (this.value.length === 1) {
+                    // Move to next input
+                    if (index < 3) {
+                        document.querySelector(`.pin-digit[data-index="${index + 1}"]`).focus();
+                    } else {
+                        // All digits entered, verify PIN
+                        verifyEnteredPin();
+                    }
+                }
+            });
+
+            input.addEventListener('keydown', function(e) {
+                const index = parseInt(this.dataset.index);
+                
+                if (e.key === 'Backspace' && !this.value && index > 0) {
+                    document.querySelector(`.pin-digit[data-index="${index - 1}"]`).focus();
+                }
+            });
+        });
+
+        async function verifyEnteredPin() {
+            const digits = Array.from(document.querySelectorAll('.pin-digit')).map(i => i.value).join('');
+            
+            if (digits.length !== 4) return;
+
+            const isValid = await window.authModule.verifyKidsPin(pendingProfile.id, digits);
+            
+            if (isValid) {
+                window.authModule.setCurrentProfile(pendingProfile);
+                window.location.href = 'dashboard.html';
+            } else {
+                document.getElementById('pin-error').classList.remove('hidden');
+                document.querySelectorAll('.pin-digit').forEach(input => {
+                    input.value = '';
+                    input.classList.add('error');
+                });
+                document.querySelector('.pin-digit[data-index="0"]').focus();
+                
+                setTimeout(() => {
+                    document.querySelectorAll('.pin-digit').forEach(input => {
+                        input.classList.remove('error');
+                    });
+                }, 500);
+            }
+        }
+    </script>
+
+</body>
+
+</html>
