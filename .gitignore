@@ -29,6 +29,7 @@ assets/img/
 # Common developer ignores
 node_modules/
 .DS_Store
+.vscode
 
 # Local editor/workspace files
 .vscode/
