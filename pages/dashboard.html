@@ -1,531 +1,1340 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Cruciflix - Plataforma de Streaming Católica">
-    <title>Cruciflix - Dashboard</title>
-
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
-
-    <!-- Stylesheets -->
+    <title>CruciFlix - Início</title>
     <link rel="stylesheet" href="../styles/main.css">
-    <link rel="stylesheet" href="../styles/responsive.css">
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* Dashboard Styles */
-        .dashboard-page {
-            padding-top: 70px;
-            min-height: 100vh;
+        /* ============================================
+           NETFLIX-STYLE DASHBOARD
+           ============================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        .hero-section {
-            height: 500px;
-            background: linear-gradient(to bottom, transparent 0%, var(--color-bg-dark) 100%),
-                url('https://images.unsplash.com/photo-1488998427799-e3362cec87c3?q=80&w=2340') center/cover;
+        body {
+            background: #0a0a0a;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 15px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 100%);
+            transition: background 0.3s;
+        }
+
+        .header.scrolled {
+            background: rgba(10,10,10,0.95);
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #00a79e;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 25px;
+            list-style: none;
+        }
+
+        .nav-menu a {
+            color: #ccc;
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: color 0.3s;
+        }
+
+        .nav-menu a:hover, .nav-menu a.active {
+            color: #fff;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .search-btn, .notifications-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .search-btn:hover, .notifications-btn:hover {
+            color: #00a79e;
+        }
+
+        .profile-dropdown {
+            position: relative;
+        }
+
+        .profile-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            color: #fff;
+        }
+
+        .profile-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 6px;
+            object-fit: cover;
+        }
+
+        .profile-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: rgba(20,20,20,0.95);
+            border: 1px solid #333;
+            border-radius: 4px;
+            min-width: 200px;
+            padding: 10px 0;
+            display: none;
+            margin-top: 10px;
+        }
+
+        .profile-menu.active {
+            display: block;
+        }
+
+        .profile-menu a, .profile-menu button {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            color: #ccc;
+            text-decoration: none;
+            font-size: 0.9rem;
+            background: none;
+            border: none;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .profile-menu a:hover, .profile-menu button:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        .profile-menu hr {
+            border: none;
+            border-top: 1px solid #333;
+            margin: 8px 0;
+        }
+
+        /* Hero Section */
+        .hero {
+            height: 85vh;
+            min-height: 600px;
+            position: relative;
             display: flex;
             align-items: flex-end;
-            padding: var(--spacing-3xl);
-            margin-bottom: var(--spacing-3xl);
+            padding: 0 40px 100px;
+        }
+
+        .hero-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-size: cover;
+            background-position: center top;
+            z-index: -1;
+        }
+
+        .hero-bg::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(0deg, #0a0a0a 0%, transparent 50%, rgba(0,0,0,0.3) 100%),
+                        linear-gradient(90deg, rgba(0,0,0,0.8) 0%, transparent 50%);
         }
 
         .hero-content {
-            max-width: 600px;
+            max-width: 550px;
             z-index: 1;
         }
 
+        .hero-logo {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.8);
+        }
+
         .hero-title {
-            font-size: var(--font-size-4xl);
-            margin-bottom: var(--spacing-md);
-            text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.8);
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.8);
+        }
+
+        .hero-meta {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+        }
+
+        .hero-meta span {
+            color: #aaa;
+        }
+
+        .hero-match {
+            color: #46d369;
+            font-weight: 600;
+        }
+
+        .hero-rating {
+            padding: 2px 8px;
+            border: 1px solid #aaa;
+            border-radius: 3px;
+            font-size: 0.8rem;
         }
 
         .hero-description {
-            font-size: var(--font-size-lg);
-            color: var(--color-text-secondary);
-            margin-bottom: var(--spacing-xl);
-            line-height: 1.6;
-            text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.8);
+            font-size: 1.1rem;
+            line-height: 1.5;
+            color: #ddd;
+            margin-bottom: 25px;
+            text-shadow: 1px 1px 5px rgba(0,0,0,0.8);
+        }
+
+        .hero-tags {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .hero-tag {
+            padding: 5px 15px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            color: #ccc;
         }
 
         .hero-actions {
             display: flex;
-            gap: var(--spacing-md);
-            flex-wrap: wrap;
+            gap: 12px;
         }
 
-        /* Quick Access Cards */
-        .quick-access {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: var(--spacing-lg);
-            margin-bottom: var(--spacing-3xl);
-        }
-
-        .quick-card {
-            background: var(--color-bg-card);
-            border-radius: var(--radius-lg);
-            padding: var(--spacing-xl);
-            text-align: center;
-            cursor: pointer;
-            transition: all var(--transition-normal);
-            border: 1px solid transparent;
-        }
-
-        .quick-card:hover {
-            transform: translateY(-5px);
-            border-color: var(--color-primary);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .quick-card-icon {
-            font-size: 3rem;
-            margin-bottom: var(--spacing-md);
-        }
-
-        .quick-card-title {
-            font-size: var(--font-size-xl);
-            font-weight: 600;
-            margin-bottom: var(--spacing-sm);
-        }
-
-        .quick-card-description {
-            color: var(--color-text-secondary);
-            font-size: var(--font-size-sm);
-        }
-
-        /* Profile Section */
-        .profile-section {
-            background: var(--color-bg-card);
-            border-radius: var(--radius-lg);
-            padding: var(--spacing-2xl);
-            margin-bottom: var(--spacing-2xl);
-        }
-
-        .profile-header {
+        .btn-play {
             display: flex;
             align-items: center;
-            gap: var(--spacing-xl);
-            margin-bottom: var(--spacing-xl);
-            flex-wrap: wrap;
+            gap: 10px;
+            background: #fff;
+            color: #000;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 4px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
         }
 
-        .profile-avatar-large {
-            width: 100px;
-            height: 100px;
+        .btn-play:hover {
+            background: rgba(255,255,255,0.8);
+        }
+
+        .btn-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(109,109,110,0.7);
+            color: #fff;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 4px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-info:hover {
+            background: rgba(109,109,110,0.5);
+        }
+
+        /* Content Rows */
+        .content-section {
+            padding: 0 40px;
+            margin-top: -80px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .row {
+            margin-bottom: 40px;
+        }
+
+        .row-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .row-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .row-see-all {
+            color: #aaa;
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: color 0.3s;
+        }
+
+        .row-see-all:hover {
+            color: #fff;
+        }
+
+        .row-slider {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            padding-bottom: 20px;
+            scrollbar-width: none;
+        }
+
+        .row-slider::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Content Card */
+        .content-card {
+            flex: 0 0 auto;
+            width: 230px;
+            cursor: pointer;
+            transition: transform 0.3s, z-index 0.3s;
+            position: relative;
+        }
+
+        .content-card:hover {
+            transform: scale(1.05);
+            z-index: 10;
+        }
+
+        .card-thumbnail {
+            width: 100%;
+            aspect-ratio: 16/9;
+            border-radius: 4px;
+            object-fit: cover;
+            background: #222;
+        }
+
+        .card-info {
+            padding: 10px 0;
+        }
+
+        .card-title {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #fff;
+            margin-bottom: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .card-match {
+            color: #46d369;
+        }
+
+        /* Continue Watching Card */
+        .continue-card {
+            position: relative;
+        }
+
+        .progress-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: rgba(255,255,255,0.3);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #00a79e;
+        }
+
+        /* Card Hover Preview (simplified) */
+        .card-hover-preview {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%) scale(0.95);
+            width: 320px;
+            background: #181818;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s;
+            z-index: 100;
+        }
+
+        .content-card:hover .card-hover-preview {
+            opacity: 1;
+            transform: translateX(-50%) scale(1);
+            pointer-events: auto;
+        }
+
+        .preview-video {
+            width: 100%;
+            aspect-ratio: 16/9;
+            border-radius: 8px 8px 0 0;
+            object-fit: cover;
+            background: #000;
+        }
+
+        .preview-info {
+            padding: 15px;
+        }
+
+        .preview-buttons {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .preview-btn {
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
-            background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+            border: 2px solid #fff;
+            background: transparent;
+            color: #fff;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: var(--font-size-4xl);
-            font-weight: 700;
-            box-shadow: var(--shadow-lg);
+            transition: all 0.3s;
         }
 
-        .profile-info h2 {
-            margin-bottom: var(--spacing-xs);
+        .preview-btn.play {
+            background: #fff;
+            color: #000;
+            border: none;
         }
 
-        .profile-email {
-            color: var(--color-text-secondary);
+        .preview-btn:hover {
+            background: rgba(255,255,255,0.2);
         }
 
-        .profile-form {
-            display: grid;
-            gap: var(--spacing-lg);
-            max-width: 500px;
-        }
-
-        /* Watch History */
-        .history-section {
-            background: var(--color-bg-card);
-            border-radius: var(--radius-lg);
-            padding: var(--spacing-2xl);
-            margin-bottom: var(--spacing-2xl);
-        }
-
-        .history-grid {
-            display: grid;
-            gap: var(--spacing-md);
-        }
-
-        .history-item {
+        .preview-meta {
             display: flex;
-            gap: var(--spacing-md);
-            padding: var(--spacing-md);
-            background: var(--color-bg-light);
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            transition: all var(--transition-normal);
+            gap: 10px;
+            font-size: 0.85rem;
+            margin-bottom: 10px;
         }
 
-        .history-item:hover {
-            background: var(--color-bg-medium);
-            transform: translateX(4px);
+        .preview-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
         }
 
-        .history-thumbnail {
-            width: 120px;
-            height: 70px;
-            border-radius: var(--radius-sm);
-            background-size: cover;
-            background-position: center;
-            background-color: var(--color-bg-dark);
-            flex-shrink: 0;
+        .preview-tag {
+            font-size: 0.75rem;
+            color: #aaa;
         }
 
-        .history-info {
-            flex: 1;
+        .preview-tag::after {
+            content: '•';
+            margin-left: 5px;
+            color: #555;
         }
 
-        .history-title {
-            font-weight: 600;
-            margin-bottom: var(--spacing-xs);
+        .preview-tag:last-child::after {
+            display: none;
         }
 
-        .history-progress-text {
-            font-size: var(--font-size-sm);
-            color: var(--color-text-muted);
-            margin-bottom: var(--spacing-xs);
+        /* Profile Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
         }
 
-        .progress-bar-container {
-            width: 100%;
-            height: 4px;
-            background: var(--color-bg-dark);
-            border-radius: var(--radius-full);
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #181818;
+            border-radius: 8px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 85vh;
             overflow: hidden;
         }
 
-        .progress-bar-fill {
-            height: 100%;
-            background: var(--color-primary);
-            border-radius: var(--radius-full);
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid #333;
         }
 
-        /* Continue Watching Section */
-        .continue-watching {
-            margin-bottom: var(--spacing-3xl);
+        .modal-header h2 {
+            font-size: 1.3rem;
         }
 
-        .videos-row {
+        .modal-close {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            padding: 20px;
+            max-height: calc(85vh - 140px);
+            overflow-y: auto;
+        }
+
+        .avatar-gallery {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: var(--spacing-lg);
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .avatar-option {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 6px;
+            object-fit: cover;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .avatar-option:hover {
+            border-color: #fff;
+        }
+
+        .avatar-option.selected {
+            border-color: #00a79e;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            background: #333;
+            border: 1px solid #444;
+            border-radius: 4px;
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #00a79e;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            padding: 20px;
+            border-top: 1px solid #333;
+        }
+
+        .btn-cancel {
+            background: transparent;
+            border: 1px solid #666;
+            color: #fff;
+            padding: 10px 25px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .btn-save {
+            background: #00a79e;
+            border: none;
+            color: #fff;
+            padding: 10px 25px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        /* Footer */
+        .footer {
+            padding: 50px 40px;
+            color: #808080;
+            font-size: 0.85rem;
+        }
+
+        .footer-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .footer-links a {
+            color: #808080;
+            text-decoration: none;
+        }
+
+        .footer-links a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header {
+                padding: 10px 20px;
+            }
+
+            .nav-menu {
+                display: none;
+            }
+
+            .hero {
+                height: 70vh;
+                min-height: 500px;
+                padding: 0 20px 80px;
+            }
+
+            .hero-title {
+                font-size: 2rem;
+            }
+
+            .hero-description {
+                font-size: 0.95rem;
+            }
+
+            .content-section {
+                padding: 0 20px;
+            }
+
+            .content-card {
+                width: 160px;
+            }
+
+            .row-title {
+                font-size: 1.1rem;
+            }
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: #fff;
+            padding: 15px 25px;
+            border-radius: 4px;
+            z-index: 2000;
+            display: none;
+        }
+
+        .toast.success {
+            background: #46d369;
+        }
+
+        .toast.error {
+            background: #dc3545;
+        }
+
+        .toast.active {
+            display: block;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateX(-50%) translateY(20px); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+
+        .no-content {
+            text-align: center;
+            padding: 40px;
+            color: #666;
         }
     </style>
 </head>
-
 <body>
+    <!-- Header -->
+    <header class="header" id="header">
+        <a href="dashboard.html" class="logo" style="text-decoration: none;">
+            <i class="fas fa-cross"></i>
+            CruciFlix
+        </a>
 
-    <!-- Header Navigation -->
-    <header class="main-header">
-        <div class="container">
-            <nav class="nav-container">
-                <div class="logo">Cruci<span class="accent">flix</span></div>
+        <nav>
+            <ul class="nav-menu">
+                <li><a href="dashboard.html" class="active">Início</a></li>
+                <li><a href="catalogo.html?filter=series">Séries</a></li>
+                <li><a href="catalogo.html?filter=movies">Filmes</a></li>
+                <li><a href="catalogo.html?filter=kids">Kids</a></li>
+                <li><a href="catalogo.html#mylist">Minha Lista</a></li>
+            </ul>
+        </nav>
 
-                <button class="mobile-menu-toggle" id="mobile-menu-toggle">☰</button>
-
-                <div class="main-nav">
-                    <ul>
-                        <li><a href="dashboard.html">Início</a></li>
-                        <li><a href="catalogo.html">Catálogo</a></li>
-                    </ul>
+        <div class="header-right">
+            <div class="search-container" id="search-container" style="display: none;">
+                <input type="text" id="search-input" placeholder="Títulos, pessoas, gêneros" style="
+                    background: rgba(0,0,0,0.75);
+                    border: 1px solid #fff;
+                    padding: 8px 15px;
+                    color: #fff;
+                    width: 250px;
+                    border-radius: 4px;
+                    font-size: 0.9rem;
+                ">
+            </div>
+            <button class="search-btn" onclick="toggleSearch()">
+                <i class="fas fa-search"></i>
+            </button>
+            <button class="notifications-btn">
+                <i class="fas fa-bell"></i>
+            </button>
+            
+            <div class="profile-dropdown">
+                <button class="profile-btn" onclick="toggleProfileMenu()">
+                    <img src="" alt="Perfil" class="profile-avatar" id="header-avatar">
+                    <i class="fas fa-caret-down"></i>
+                </button>
+                <div class="profile-menu" id="profile-menu">
+                    <a href="select-profile.html">
+                        <i class="fas fa-exchange-alt"></i>
+                        Trocar Perfil
+                    </a>
+                    <a href="#" onclick="openProfileModal()">
+                        <i class="fas fa-user-edit"></i>
+                        Gerenciar Perfil
+                    </a>
+                    <hr>
+                    <a href="#" id="admin-link" style="display: none;">
+                        <i class="fas fa-cog"></i>
+                        Painel Admin
+                    </a>
+                    <button onclick="handleLogout()">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Sair do CruciFlix
+                    </button>
                 </div>
-
-                <div class="user-menu">
-                    <div class="user-menu-btn" id="user-menu-btn">
-                        <div class="user-avatar" id="user-avatar">U</div>
-                        <span id="user-name">Usuário</span>
-                    </div>
-                    <div class="user-menu-dropdown" id="user-menu-dropdown">
-                        <a href="#profile-section" onclick="scrollToProfile()">Meu Perfil</a>
-                        <a href="#" id="admin-link" style="display:none;">Painel Admin</a>
-                        <a href="#" onclick="handleLogout(event)">Sair</a>
-                    </div>
-                </div>
-            </nav>
+            </div>
         </div>
     </header>
 
-    <main class="dashboard-page">
-
-        <!-- Hero Section -->
-        <section class="hero-section">
-            <div class="hero-content">
-                <h1 class="hero-title">Bem-vindo ao Cruciflix</h1>
-                <p class="hero-description">
-                    Assista aos melhores filmes, séries e documentários católicos. Fortaleça sua fé enquanto se entretém.
-                </p>
-                <div class="hero-actions">
-                    <button class="btn btn-primary" onclick="window.location.href='catalogo.html'">Explorar Catálogo</button>
-                    <button class="btn btn-secondary" onclick="window.location.href='catalogo.html'">👶 Área Kids</button>
-                </div>
+    <!-- Hero Section -->
+    <section class="hero" id="hero">
+        <div class="hero-bg" id="hero-bg"></div>
+        <div class="hero-content">
+            <h1 class="hero-title" id="hero-title">Carregando...</h1>
+            <div class="hero-meta">
+                <span class="hero-match" id="hero-match">98% relevante</span>
+                <span id="hero-year">2024</span>
+                <span class="hero-rating" id="hero-rating">L</span>
+                <span id="hero-duration">2h 15min</span>
             </div>
+            <p class="hero-description" id="hero-description">
+                Carregando descrição...
+            </p>
+            <div class="hero-tags" id="hero-tags"></div>
+            <div class="hero-actions">
+                <button class="btn-play" id="btn-play">
+                    <i class="fas fa-play"></i>
+                    Assistir
+                </button>
+                <button class="btn-info" id="btn-info">
+                    <i class="fas fa-info-circle"></i>
+                    Mais Informações
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Content Rows -->
+    <main class="content-section">
+        <!-- Continue Watching -->
+        <section class="row" id="continue-row" style="display: none;">
+            <div class="row-header">
+                <h2 class="row-title">Continuar Assistindo</h2>
+            </div>
+            <div class="row-slider" id="continue-slider"></div>
         </section>
 
-        <div class="container">
+        <!-- My List -->
+        <section class="row" id="mylist-row" style="display: none;">
+            <div class="row-header">
+                <h2 class="row-title">Minha Lista</h2>
+                <a href="#" class="row-see-all">Ver tudo <i class="fas fa-chevron-right"></i></a>
+            </div>
+            <div class="row-slider" id="mylist-slider"></div>
+        </section>
 
-            <!-- Quick Access -->
-            <section class="quick-access">
-                <div class="quick-card" onclick="window.location.href='catalogo.html'">
-                    <div class="quick-card-icon">🎬</div>
-                    <div class="quick-card-title">Catálogo Completo</div>
-                    <div class="quick-card-description">Explore todos os vídeos disponíveis</div>
-                </div>
-                <div class="quick-card" onclick="window.location.href='catalogo.html'">
-                    <div class="quick-card-icon">👶</div>
-                    <div class="quick-card-title">Conteúdo Kids</div>
-                    <div class="quick-card-description">Vídeos seguros para crianças</div>
-                </div>
-                <div class="quick-card" onclick="scrollToHistory()">
-                    <div class="quick-card-icon">📺</div>
-                    <div class="quick-card-title">Continuar Assistindo</div>
-                    <div class="quick-card-description">Retome de onde parou</div>
-                </div>
-                <div class="quick-card" onclick="scrollToProfile()">
-                    <div class="quick-card-icon">👤</div>
-                    <div class="quick-card-title">Meu Perfil</div>
-                    <div class="quick-card-description">Gerencie sua conta</div>
-                </div>
-            </section>
+        <!-- Popular Movies -->
+        <section class="row" id="movies-row">
+            <div class="row-header">
+                <h2 class="row-title">Filmes Populares</h2>
+                <a href="catalogo.html?type=movie" class="row-see-all">Ver tudo <i class="fas fa-chevron-right"></i></a>
+            </div>
+            <div class="row-slider" id="movies-slider"></div>
+        </section>
 
-            <!-- Continue Watching -->
-            <section class="continue-watching" id="continue-section">
-                <h2 class="section-title">Continuar Assistindo</h2>
-                <div class="videos-row" id="continue-watching-container">
-                    <!-- Loaded dynamically -->
-                </div>
-            </section>
+        <!-- Series -->
+        <section class="row" id="series-row">
+            <div class="row-header">
+                <h2 class="row-title">Séries em Destaque</h2>
+                <a href="catalogo.html?type=series" class="row-see-all">Ver tudo <i class="fas fa-chevron-right"></i></a>
+            </div>
+            <div class="row-slider" id="series-slider"></div>
+        </section>
 
-            <!-- Watch History -->
-            <section class="history-section" id="history-section">
-                <h2>Histórico de Visualização</h2>
-                <div class="history-grid" id="history-container">
-                    <!-- Loaded dynamically -->
-                </div>
-            </section>
+        <!-- Kids -->
+        <section class="row" id="kids-row">
+            <div class="row-header">
+                <h2 class="row-title">Para as Crianças</h2>
+                <a href="catalogo.html?type=kids" class="row-see-all">Ver tudo <i class="fas fa-chevron-right"></i></a>
+            </div>
+            <div class="row-slider" id="kids-slider"></div>
+        </section>
 
-            <!-- Profile Section -->
-            <section class="profile-section" id="profile-section">
-                <div class="profile-header">
-                    <div class="profile-avatar-large" id="profile-avatar-large">U</div>
-                    <div class="profile-info">
-                        <h2 id="profile-name">Carregando...</h2>
-                        <p class="profile-email" id="profile-email"></p>
-                    </div>
-                </div>
-
-                <h3 style="margin-bottom: var(--spacing-lg);">Configurações da Conta</h3>
-
-                <form class="profile-form" id="profile-form" onsubmit="handleProfileUpdate(event)">
-                    <div class="form-group">
-                        <label class="form-label">Nome de Exibição</label>
-                        <input type="text" id="display-name" class="form-input" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Email</label>
-                        <input type="email" id="email-display" class="form-input" disabled>
-                        <small style="color: var(--color-text-muted);">O email não pode ser alterado</small>
-                    </div>
-
-                    <div style="display: flex; gap: var(--spacing-md); flex-wrap: wrap;">
-                        <button type="submit" class="btn btn-primary">Salvar Alterações</button>
-                        <button type="button" class="btn btn-ghost" style="border-color: var(--color-warning); color: var(--color-warning);" onclick="handlePasswordReset()">
-                            Redefinir Senha
-                        </button>
-                    </div>
-                </form>
-            </section>
-
-        </div>
+        <!-- Dynamic Tag Rows will be inserted here -->
+        <div id="tag-rows"></div>
     </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-links">
+            <a href="#">Perguntas frequentes</a>
+            <a href="#">Central de Ajuda</a>
+            <a href="#">Termos de Uso</a>
+            <a href="#">Privacidade</a>
+            <a href="#">Preferências de Cookies</a>
+            <a href="#">Informações Corporativas</a>
+        </div>
+        <p>© 2024 CruciFlix</p>
+    </footer>
+
+    <!-- Profile Modal -->
+    <div class="modal" id="profile-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Editar Perfil</h2>
+                <button class="modal-close" onclick="closeProfileModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 15px; color: #aaa;">Escolha um avatar:</p>
+                <div class="avatar-gallery" id="avatar-gallery"></div>
+                
+                <div class="form-group">
+                    <label>Nome do Perfil</label>
+                    <input type="text" id="profile-name-input" placeholder="Nome do perfil">
+                </div>
+                
+                <div class="form-group">
+                    <label>PIN de Bloqueio (4 dígitos - opcional)</label>
+                    <input type="password" id="profile-pin-input" placeholder="••••" maxlength="4" pattern="[0-9]*" inputmode="numeric" style="width: 120px;">
+                    <small style="color: #666; display: block; margin-top: 5px;">Usado para proteger este perfil</small>
+                </div>
+                
+                <div class="form-group" style="display: flex; align-items: center; gap: 15px;">
+                    <label style="margin: 0; cursor: pointer; display: flex; align-items: center; gap: 10px;">
+                        <div class="toggle-switch" id="kids-toggle" onclick="toggleKidsMode()">
+                            <div class="toggle-slider"></div>
+                        </div>
+                        <span>Perfil Kids</span>
+                    </label>
+                    <small style="color: #666;">Mostra apenas conteúdo apropriado para crianças</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeProfileModal()">Cancelar</button>
+                <button class="btn-save" onclick="saveProfileChanges()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .toggle-switch {
+            width: 50px;
+            height: 26px;
+            background: #444;
+            border-radius: 13px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .toggle-switch.active {
+            background: #00a79e;
+        }
+        .toggle-slider {
+            width: 22px;
+            height: 22px;
+            background: #fff;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: left 0.3s;
+        }
+        .toggle-switch.active .toggle-slider {
+            left: 26px;
+        }
+    </style>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.12"></script>
 
     <!-- App Scripts -->
     <script src="../scripts/app-core.js"></script>
     <script src="../scripts/app-catalog.js"></script>
 
     <script>
+        // Global state (reuse `currentProfile` from `app-core.js`)
         let currentUser = null;
+        let featuredContent = null;
+        let selectedAvatar = null;
 
-        // Initialize page
-        window.authModule.onAuthStateChanged(async (authState) => {
-            if (!authState.loggedIn) {
-                window.location.href = 'index.html';
-                return;
-            }
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Check auth
+            firebase.auth().onAuthStateChanged(async (user) => {
+                if (!user) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+                
+                // Check if email is verified
+                if (!user.emailVerified) {
+                    window.location.href = 'verify-email.html';
+                    return;
+                }
+                
+                currentUser = user;
 
-            currentUser = authState.user;
+                // Check profile
+                currentProfile = window.authModule?.getCurrentProfile?.();
+                if (!currentProfile) {
+                    window.location.href = 'select-profile.html';
+                    return;
+                }
 
-            // Update user info in header
-            const displayName = currentUser.displayName || currentUser.email;
-            const initials = displayName.charAt(0).toUpperCase();
-            
-            document.getElementById('user-name').textContent = displayName;
-            document.getElementById('user-avatar').textContent = initials;
+                // Initialize UI
+                initializeUI();
+                await loadContent();
 
-            // Update profile section
-            document.getElementById('profile-name').textContent = displayName;
-            document.getElementById('profile-email').textContent = currentUser.email;
-            document.getElementById('profile-avatar-large').textContent = initials;
-            document.getElementById('display-name').value = currentUser.displayName || '';
-            document.getElementById('email-display').value = currentUser.email;
-
-            // Show admin link if admin
-            if (authState.isAdmin) {
-                document.getElementById('admin-link').style.display = 'block';
-                document.getElementById('admin-link').href = 'admin.html';
-            }
-
-            // Load user data
-            await loadContinueWatching();
-            await loadWatchHistory();
-        });
-
-        // Load continue watching (incomplete videos)
-        async function loadContinueWatching() {
-            const container = document.getElementById('continue-watching-container');
-            const progressList = await window.firestoreModule.getUserProgress();
-            
-            // Filter to only incomplete videos
-            const incompleteProgress = progressList.filter(p => !p.completed && p.watchTime > 0);
-            
-            if (incompleteProgress.length === 0) {
-                container.innerHTML = '<p class="no-results">Nenhum vídeo em andamento. Explore o catálogo!</p>';
-                return;
-            }
-
-            container.innerHTML = '';
-
-            for (const progress of incompleteProgress.slice(0, 4)) {
-                const video = await window.firestoreModule.getVideoById(progress.videoId);
-                if (!video) continue;
-
-                const card = window.uiModule.createVideoCard(video, (id) => {
-                    window.location.href = `catalogo.html?v=${id}`;
-                });
-                container.appendChild(card);
-            }
-        }
-
-        // Load watch history
-        async function loadWatchHistory() {
-            const container = document.getElementById('history-container');
-            const progressList = await window.firestoreModule.getUserProgress();
-
-            if (progressList.length === 0) {
-                container.innerHTML = '<p class="no-results">Você ainda não assistiu nenhum vídeo.</p>';
-                return;
-            }
-
-            container.innerHTML = '';
-
-            for (const progress of progressList.slice(0, 10)) {
-                const video = await window.firestoreModule.getVideoById(progress.videoId);
-                if (!video) continue;
-
-                const percentage = video.duration > 0 ? (progress.watchTime / video.duration) * 100 : 0;
-                const thumbnail = video.thumbnailUrl || 'https://via.placeholder.com/120x70/1a1a2e/00d9ff?text=' + encodeURIComponent(video.title.substring(0, 10));
-
-                const item = document.createElement('div');
-                item.className = 'history-item';
-                item.onclick = () => window.location.href = `catalogo.html?v=${video.id}`;
-
-                item.innerHTML = `
-                    <div class="history-thumbnail" style="background-image: url('${thumbnail}');"></div>
-                    <div class="history-info">
-                        <div class="history-title">${video.title}</div>
-                        <div class="history-progress-text">
-                            ${window.uiModule.formatTime(progress.watchTime)} / ${window.uiModule.formatTime(video.duration)}
-                            ${progress.completed ? ' - ✓ Concluído' : ''}
-                        </div>
-                        <div class="progress-bar-container">
-                            <div class="progress-bar-fill" style="width: ${Math.min(percentage, 100)}%;"></div>
-                        </div>
-                    </div>
-                `;
-
-                container.appendChild(item);
-            }
-        }
-
-        // Handle profile update
-        async function handleProfileUpdate(event) {
-            event.preventDefault();
-
-            const newDisplayName = document.getElementById('display-name').value.trim();
-
-            if (!newDisplayName) {
-                window.uiModule.showToast('Nome não pode estar vazio', 'error');
-                return;
-            }
-
-            window.uiModule.showLoading();
-
-            const result = await window.authModule.updateUserProfile({
-                displayName: newDisplayName
+                // Check admin
+                const userDoc = await firebase.firestore().collection('users').doc(user.uid).get();
+                if (userDoc.exists && userDoc.data().role === 'admin') {
+                    document.getElementById('admin-link').style.display = 'flex';
+                    document.getElementById('admin-link').href = 'admin.html';
+                }
             });
 
-            window.uiModule.hideLoading();
+            // Header scroll effect
+            window.addEventListener('scroll', () => {
+                document.getElementById('header').classList.toggle('scrolled', window.scrollY > 50);
+            });
+        });
 
-            if (result.success) {
-                window.uiModule.showToast('Perfil atualizado com sucesso!', 'success');
-                setTimeout(() => window.location.reload(), 1500);
+        function initializeUI() {
+            // Set profile avatar
+            const avatarImg = document.getElementById('header-avatar');
+            avatarImg.src = currentProfile?.avatar || window.authModule?.AVATARS?.[0]?.url || 'https://api.dicebear.com/7.x/initials/svg?seed=SA&backgroundColor=8b0000';
+            
+            // Populate avatar gallery
+            const gallery = document.getElementById('avatar-gallery');
+            const avatars = window.authModule?.AVATARS || [];
+            gallery.innerHTML = avatars.map(avatar => `
+                <img src="${avatar.url}" class="avatar-option ${avatar.url === currentProfile?.avatar ? 'selected' : ''}" 
+                     onclick="selectAvatar('${avatar.url}')" alt="${avatar.name}" title="${avatar.name}">
+            `).join('');
+            
+            document.getElementById('profile-name-input').value = currentProfile.name || '';
+            document.getElementById('profile-pin-input').value = currentProfile.pin || '';
+            
+            // Set kids toggle state
+            const kidsToggle = document.getElementById('kids-toggle');
+            if (currentProfile.isKids) {
+                kidsToggle.classList.add('active');
             } else {
-                window.uiModule.showToast('Erro ao atualizar perfil: ' + result.error, 'error');
+                kidsToggle.classList.remove('active');
+            }
+            
+            selectedAvatar = currentProfile.avatar;
+        }
+
+        function toggleKidsMode() {
+            const toggle = document.getElementById('kids-toggle');
+            toggle.classList.toggle('active');
+        }
+
+        async function loadContent() {
+            try {
+                // Load all content
+                const [movies, series, tags] = await Promise.all([
+                    window.firestoreModule.getAllMovies(),
+                    window.firestoreModule.getAllSeries(),
+                    window.firestoreModule.getAllTags()
+                ]);
+
+                // Set hero (featured content)
+                const allContent = [...movies, ...series].filter(c => c.bannerUrl);
+                if (allContent.length > 0) {
+                    featuredContent = allContent[Math.floor(Math.random() * allContent.length)];
+                    setHeroContent(featuredContent);
+                } else if (movies.length > 0) {
+                    featuredContent = movies[0];
+                    setHeroContent(featuredContent);
+                }
+
+                // Load continue watching
+                await loadContinueWatching();
+
+                // Load my list
+                await loadMyList();
+
+                // Populate rows
+                populateRow('movies-slider', movies);
+                populateRow('series-slider', series);
+                
+                // Kids content
+                const kidsContent = [...movies, ...series].filter(c => c.isKidsSafe);
+                if (kidsContent.length > 0) {
+                    populateRow('kids-slider', kidsContent);
+                    document.getElementById('kids-row').style.display = 'block';
+                } else {
+                    document.getElementById('kids-row').style.display = 'none';
+                }
+
+                // Dynamic tag rows
+                const tagRows = document.getElementById('tag-rows');
+                for (const tag of tags.slice(0, 5)) {
+                    const tagContent = [...movies, ...series].filter(c => 
+                        c.tags && c.tags.includes(tag.name)
+                    );
+                    if (tagContent.length >= 3) {
+                        const row = document.createElement('section');
+                        row.className = 'row';
+                        row.innerHTML = `
+                            <div class="row-header">
+                                <h2 class="row-title">${tag.name}</h2>
+                                <a href="#" class="row-see-all">Ver tudo <i class="fas fa-chevron-right"></i></a>
+                            </div>
+                            <div class="row-slider" id="tag-${tag.id}-slider"></div>
+                        `;
+                        tagRows.appendChild(row);
+                        populateRow(`tag-${tag.id}-slider`, tagContent);
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error loading content:', error);
             }
         }
 
-        // Handle password reset
-        async function handlePasswordReset() {
-            if (!confirm('Deseja redefinir sua senha? Um email será enviado para ' + currentUser.email)) {
+        function setHeroContent(content) {
+            document.getElementById('hero-bg').style.backgroundImage = `url('${content.bannerUrl || content.thumbnailUrl || ''}')`;
+            document.getElementById('hero-title').textContent = content.title;
+            document.getElementById('hero-year').textContent = content.year || '2024';
+            document.getElementById('hero-duration').textContent = content.duration ? `${content.duration} min` : '';
+            document.getElementById('hero-description').textContent = content.description || '';
+            
+            const tagsContainer = document.getElementById('hero-tags');
+            tagsContainer.innerHTML = (content.tags || []).slice(0, 4).map(tag => 
+                `<span class="hero-tag">${tag}</span>`
+            ).join('');
+
+            document.getElementById('btn-play').onclick = () => playContent(content);
+            document.getElementById('btn-info').onclick = () => showInfo(content);
+        }
+
+        async function loadContinueWatching() {
+            const progress = await window.firestoreModule.getUserProgress();
+            if (progress && progress.length > 0) {
+                document.getElementById('continue-row').style.display = 'block';
+                const slider = document.getElementById('continue-slider');
+                slider.innerHTML = '';
+                
+                for (const item of progress.slice(0, 10)) {
+                    if (item.content) {
+                        const card = createContinueCard(item.content, item.watchTime, item.content.duration);
+                        slider.appendChild(card);
+                    }
+                }
+            }
+        }
+
+        async function loadMyList() {
+            const watchlist = await window.firestoreModule.getWatchlist();
+            if (watchlist && watchlist.length > 0) {
+                document.getElementById('mylist-row').style.display = 'block';
+                populateRow('mylist-slider', watchlist);
+            }
+        }
+
+        function populateRow(sliderId, content) {
+            const slider = document.getElementById(sliderId);
+            if (!slider) return;
+            
+            if (content.length === 0) {
+                slider.innerHTML = '<p class="no-content">Nenhum conteúdo disponível</p>';
                 return;
             }
 
-            window.uiModule.showLoading();
-            const result = await window.authModule.resetPassword(currentUser.email);
-            window.uiModule.hideLoading();
+            slider.innerHTML = content.map(item => createContentCard(item)).join('');
+        }
 
+        function createContentCard(item) {
+            const thumbnail = item.thumbnailUrl || 'https://via.placeholder.com/230x130/222/fff?text=' + encodeURIComponent(item.title);
+            const type = (item.type || '').toLowerCase() === 'series' ? 'Série' : 'Filme';
+            
+            return `
+                <div class="content-card" onclick="playContent(${JSON.stringify(item).replace(/"/g, '&quot;')})">
+                    <img src="${thumbnail}" alt="${item.title}" class="card-thumbnail">
+                    <div class="card-info">
+                        <div class="card-title">${item.title}</div>
+                        <div class="card-meta">
+                            <span class="card-match">98%</span>
+                            <span>${item.year || '2024'}</span>
+                            <span>${type}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function createContinueCard(item, watchTime, duration) {
+            const card = document.createElement('div');
+            card.className = 'content-card continue-card';
+            card.onclick = () => playContent(item);
+            
+            const thumbnail = item.thumbnailUrl || 'https://via.placeholder.com/230x130';
+            const progress = duration > 0 ? (watchTime / duration) * 100 : 0;
+            
+            card.innerHTML = `
+                <div style="position: relative;">
+                    <img src="${thumbnail}" alt="${item.title}" class="card-thumbnail">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${progress}%"></div>
+                    </div>
+                </div>
+                <div class="card-info">
+                    <div class="card-title">${item.title}</div>
+                    <div class="card-meta">
+                        <span>${formatTime(watchTime)} restantes</span>
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        function formatTime(seconds) {
+            if (!seconds) return '0:00';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function playContent(content) {
+            if (typeof content === 'string') {
+                content = JSON.parse(content);
+            }
+            
+            // Navigate to player - check both uppercase and lowercase type
+            const contentType = (content.type || '').toLowerCase();
+            const type = contentType === 'series' ? 'series' : 'movie';
+            window.location.href = `player.html?type=${type}&id=${content.id}`;
+        }
+
+        function showInfo(content) {
+            // For now, just play - could show a detail modal
+            playContent(content);
+        }
+
+        // Profile menu
+        function toggleProfileMenu() {
+            document.getElementById('profile-menu').classList.toggle('active');
+        }
+
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.profile-dropdown')) {
+                document.getElementById('profile-menu').classList.remove('active');
+            }
+        });
+
+        // Profile modal
+        function openProfileModal() {
+            document.getElementById('profile-modal').classList.add('active');
+            document.getElementById('profile-menu').classList.remove('active');
+        }
+
+        function closeProfileModal() {
+            document.getElementById('profile-modal').classList.remove('active');
+        }
+
+        function selectAvatar(avatar) {
+            selectedAvatar = avatar;
+            document.querySelectorAll('.avatar-option').forEach(el => el.classList.remove('selected'));
+            event.target.classList.add('selected');
+        }
+
+        async function saveProfileChanges() {
+            const newName = document.getElementById('profile-name-input').value.trim();
+            if (!newName) {
+                showToast('Nome não pode estar vazio', 'error');
+                return;
+            }
+
+            const newPin = document.getElementById('profile-pin-input').value.trim();
+            if (newPin && (newPin.length !== 4 || !/^\d{4}$/.test(newPin))) {
+                showToast('PIN deve ter 4 dígitos numéricos', 'error');
+                return;
+            }
+
+            const isKids = document.getElementById('kids-toggle').classList.contains('active');
+
+            const updates = { 
+                name: newName,
+                pin: newPin || '',
+                isKids: isKids
+            };
+            if (selectedAvatar) updates.avatar = selectedAvatar;
+
+            const result = await window.authModule.updateProfile(currentProfile.id, updates);
+            
             if (result.success) {
-                window.uiModule.showToast('Email de redefinição enviado!', 'success');
+                currentProfile = { ...currentProfile, ...updates };
+                sessionStorage.setItem('currentProfile', JSON.stringify(currentProfile));
+                document.getElementById('header-avatar').src = currentProfile.avatar;
+                closeProfileModal();
+                showToast('Perfil atualizado!', 'success');
             } else {
-                window.uiModule.showToast('Erro: ' + result.error, 'error');
+                showToast('Erro ao salvar: ' + result.error, 'error');
             }
         }
 
-        // Scroll helpers
-        function scrollToProfile() {
-            document.getElementById('profile-section').scrollIntoView({ behavior: 'smooth' });
-        }
-
-        function scrollToHistory() {
-            document.getElementById('history-section').scrollIntoView({ behavior: 'smooth' });
-        }
-
-        // Handle logout
-        async function handleLogout(event) {
-            event.preventDefault();
-            const result = await window.authModule.logoutUser();
-            if (result.success) {
+        function handleLogout() {
+            firebase.auth().signOut().then(() => {
+                sessionStorage.removeItem('currentProfile');
                 window.location.href = 'index.html';
+            });
+        }
+
+        function toggleSearch() {
+            const container = document.getElementById('search-container');
+            const input = document.getElementById('search-input');
+            
+            if (container.style.display === 'none') {
+                container.style.display = 'block';
+                input.focus();
             } else {
-                window.uiModule.showToast('Erro ao sair', 'error');
+                if (input.value.trim()) {
+                    // Redirect to catalog with search query
+                    window.location.href = `catalogo.html?search=${encodeURIComponent(input.value.trim())}`;
+                } else {
+                    container.style.display = 'none';
+                }
             }
+        }
+
+        // Handle Enter key on search input
+        document.getElementById('search-input')?.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && this.value.trim()) {
+                window.location.href = `catalogo.html?search=${encodeURIComponent(this.value.trim())}`;
+            }
+        });
+
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast active ' + type;
+            setTimeout(() => toast.classList.remove('active'), 3000);
         }
     </script>
-
 </body>
-
 </html>
