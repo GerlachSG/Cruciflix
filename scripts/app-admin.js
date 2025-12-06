@@ -1,205 +1,1057 @@
 // ============================================
-// CRUCIFLIX - APP ADMIN
-// Admin Panel + HLS Upload Functions (Consolidated)
+// CRUCIFLIX - APP ADMIN (Netflix-Style)
+// Gerenciamento de Filmes, Séries, Tags e Usuários
 // ============================================
 
 // ============================================
-// VIDEO MANAGEMENT
+// GLOBAL STATE
+// ============================================
+let allTags = [];
+let allSeries = [];
+let currentSeriesId = null;
+
+// ============================================
+// INITIALIZATION
 // ============================================
 
-// Load all videos in admin table
-async function loadAdminVideos() {
-    const videos = await window.firestoreModule.getAllVideos();
-    displayVideosTable(videos);
+document.addEventListener('DOMContentLoaded', () => {
+    // Verifica autenticação
+    firebase.auth().onAuthStateChanged(async (user) => {
+        if (user) {
+            // Tentativa de detectar permissão de admin a partir do documento do usuário
+            let isAdmin = false;
+            try {
+                const doc = await firebase.firestore().collection('users').doc(user.uid).get();
+                const data = (doc && doc.exists) ? doc.data() : {};
+
+                // Normaliza e verifica vários padrões possíveis de flag de admin
+                const roleVal = (data.role || data.ro || '').toString().trim();
+                const roleUpper = roleVal ? roleVal.toUpperCase() : '';
+
+                const rolesObj = data.roles || {};
+
+                isAdmin = !!(
+                    data.isAdmin === true ||
+                    String(data.isAdmin).toLowerCase() === 'true' ||
+                    roleUpper === 'ADMIN' ||
+                    roleUpper === 'ADM' ||
+                    // permissões dentro de um objeto roles: { admin: true }
+                    rolesObj.admin === true ||
+                    String(rolesObj.admin).toLowerCase() === 'true'
+                );
+            } catch (err) {
+                console.warn('Não foi possível ler dados do usuário para verificação de admin:', err);
+            }
+
+            if (!isAdmin) {
+                // Ativa modo que oculta todo o conteúdo da página exceto o modal de sem-permissão
+                document.body.classList.add('non-admin-mode');
+                const span = document.getElementById('no-perm-email');
+                if (span) span.textContent = user.email || '-';
+
+                // ligar botões do modal
+                const btnLogout = document.getElementById('no-perm-logout');
+                if (btnLogout) btnLogout.addEventListener('click', () => firebase.auth().signOut());
+                const btnBack = document.getElementById('no-perm-back');
+                if (btnBack) btnBack.addEventListener('click', () => { window.location.href = '../pages/dashboard.html'; });
+
+                // Não inicializa funcionalidades administrativas
+                return;
+            }
+
+            // Usuário é admin: prosseguir normalmente
+            document.getElementById('admin-email').textContent = user.email;
+            await initializeAdmin();
+        } else {
+            window.location.href = 'index.html';
+        }
+    });
+
+    // Setup navigation
+    setupNavigation();
+    
+    // Setup forms
+    setupForms();
+    
+    // Setup search
+    setupSearch();
+    
+    // Logout
+    document.getElementById('btn-logout').addEventListener('click', () => {
+        firebase.auth().signOut();
+    });
+});
+
+async function initializeAdmin() {
+    // Load tags first (needed for selectors)
+    await loadTags();
+    
+    // Load dashboard stats
+    await loadDashboardStats();
+    
+    // Load initial data based on active section
+    await loadMovies();
+    
+    // Registrar callbacks para atualização automática quando dados mudarem
+    if (window.firestoreModule && window.firestoreModule.onDataUpdate) {
+        window.firestoreModule.onDataUpdate('movies', (newMovies) => {
+            console.log('🔄 Filmes atualizados em background, recarregando tabela...');
+            displayMoviesTable(newMovies);
+            loadDashboardStats(); // Atualiza estatísticas também
+        });
+        
+        window.firestoreModule.onDataUpdate('series', (newSeries) => {
+            console.log('🔄 Séries atualizadas em background, recarregando tabela...');
+            allSeries = newSeries;
+            displaySeriesTable(newSeries);
+            loadDashboardStats();
+        });
+        
+        window.firestoreModule.onDataUpdate('tags', (newTags) => {
+            console.log('🔄 Tags atualizadas em background, recarregando...');
+            allTags = newTags;
+            displayTagsGrid();
+        });
+    }
 }
 
-// Display videos in admin table
-function displayVideosTable(videos) {
-    const tableBody = document.getElementById('videos-table-body');
-    if (!tableBody) return;
+// ============================================
+// NAVIGATION
+// ============================================
 
-    tableBody.innerHTML = '';
+// Normalize subscription stored in Firestore. Returns uppercase plan string (FREE/BASIC/PREMIUM)
+function normalizeSubscription(sub) {
+    if (!sub) return 'FREE';
+    if (typeof sub === 'string') return sub.toUpperCase();
+    if (typeof sub === 'object') {
+        if (sub.plan) return String(sub.plan).toUpperCase();
+        if (sub.id) return String(sub.id).toUpperCase();
+    }
+    return 'FREE';
+}
 
-    videos.forEach(video => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${video.title}</td>
-            <td>${(video.tags || []).join(', ')}</td>
-            <td>${video.viewCount || 0}</td>
-            <td>${video.isKidsSafe ? 'Sim' : 'Não'}</td>
-            <td>
-                <button class="btn-edit" onclick="window.adminModule.editVideo('${video.id}')">Editar</button>
-                <button class="btn-delete" onclick="window.adminModule.confirmDeleteVideo('${video.id}', '${video.title.replace(/'/g, "\\'")}')">Excluir</button>
-            </td>
-        `;
-        tableBody.appendChild(row);
+function setupNavigation() {
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            const section = item.dataset.section;
+            
+            // Update active nav
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+            item.classList.add('active');
+            
+            // Show section
+            document.querySelectorAll('.admin-section').forEach(sec => sec.classList.remove('active'));
+            document.getElementById(`section-${section}`).classList.add('active');
+            
+            // Load section data
+            loadSectionData(section);
+        });
     });
 }
 
-// Handle add video form submission
-async function handleAddVideoForm(event) {
-    event.preventDefault();
-
-    const form = event.target;
-    const videoData = {
-        title: form.title.value,
-        description: form.description.value,
-        tags: form.tags.value.split(',').map(tag => tag.trim()).filter(tag => tag),
-        hlsUrl: form.hlsUrl.value,
-        thumbnailUrl: form.thumbnailUrl.value,
-        duration: parseInt(form.duration.value) || 0,
-        isKidsSafe: form.isKidsSafe.checked
-    };
-
-    const result = await window.firestoreModule.addVideo(videoData);
-
-    if (result.success) {
-        window.uiModule.showToast('Vídeo adicionado com sucesso!', 'success');
-        form.reset();
-        loadAdminVideos();
-    } else {
-        window.uiModule.showToast('Erro ao adicionar vídeo: ' + result.error, 'error');
-    }
-}
-
-// Edit video
-async function editVideo(videoId) {
-    const video = await window.firestoreModule.getVideoById(videoId);
-    if (!video) return;
-
-    const form = document.getElementById('edit-video-form');
-    if (!form) return;
-
-    form.elements.videoId.value = video.id;
-    form.elements.title.value = video.title;
-    form.elements.description.value = video.description;
-    form.elements.tags.value = (video.tags || []).join(', ');
-    form.elements.hlsUrl.value = video.hlsUrl;
-    form.elements.thumbnailUrl.value = video.thumbnailUrl || '';
-    form.elements.duration.value = video.duration || 0;
-    form.elements.isKidsSafe.checked = video.isKidsSafe;
-
-    window.uiModule.showModal('edit-video-modal');
-}
-
-// Handle edit video form submission
-async function handleEditVideoForm(event) {
-    event.preventDefault();
-
-    const form = event.target;
-    const videoId = form.videoId.value;
-
-    const updates = {
-        title: form.title.value,
-        description: form.description.value,
-        tags: form.tags.value.split(',').map(tag => tag.trim()).filter(tag => tag),
-        hlsUrl: form.hlsUrl.value,
-        thumbnailUrl: form.thumbnailUrl.value,
-        duration: parseInt(form.duration.value) || 0,
-        isKidsSafe: form.isKidsSafe.checked
-    };
-
-    const result = await window.firestoreModule.updateVideo(videoId, updates);
-
-    if (result.success) {
-        window.uiModule.showToast('Vídeo atualizado com sucesso!', 'success');
-        window.uiModule.hideModal('edit-video-modal');
-        loadAdminVideos();
-    } else {
-        window.uiModule.showToast('Erro ao atualizar vídeo: ' + result.error, 'error');
-    }
-}
-
-// Confirm delete video
-function confirmDeleteVideo(videoId, title) {
-    if (confirm(`Tem certeza que deseja excluir "${title}"?`)) {
-        deleteVideoAdmin(videoId);
-    }
-}
-
-// Delete video
-async function deleteVideoAdmin(videoId) {
-    const result = await window.firestoreModule.deleteVideo(videoId);
-
-    if (result.success) {
-        window.uiModule.showToast('Vídeo excluído com sucesso!', 'success');
-        loadAdminVideos();
-    } else {
-        window.uiModule.showToast('Erro ao excluir vídeo: ' + result.error, 'error');
+async function loadSectionData(section) {
+    switch (section) {
+        case 'dashboard':
+            await loadDashboardStats();
+            break;
+        case 'movies':
+            await loadMovies();
+            break;
+        case 'series':
+            await loadSeries();
+            break;
+        case 'tags':
+            await loadTags();
+            break;
+        case 'users':
+            await loadUsers();
+            break;
+        case 'subscriptions':
+            await loadSubscriptionStats();
+            break;
+        case 'comments':
+            await loadComments();
+            break;
+        case 'upload':
+            await populateUploadForm();
+            break;
     }
 }
 
 // ============================================
-// USER MANAGEMENT
+// DASHBOARD
 // ============================================
 
-// Load all users
+async function loadDashboardStats() {
+    try {
+        // Total Movies
+        const movies = await window.firestoreModule.getAllMovies();
+        document.getElementById('total-movies').textContent = movies.length;
+        
+        // Total Series
+        const series = await window.firestoreModule.getAllSeries();
+        document.getElementById('total-series').textContent = series.length;
+        
+        // Total Users
+        const usersSnapshot = await firebase.firestore().collection('users').get();
+        document.getElementById('total-users').textContent = usersSnapshot.size;
+        
+        // Premium Users
+        let premiumCount = 0;
+        usersSnapshot.forEach(doc => {
+            const data = doc.data();
+            const plan = normalizeSubscription(data.subscription);
+            if (plan === 'PREMIUM') premiumCount++;
+        });
+        document.getElementById('premium-users').textContent = premiumCount;
+        
+        // Recent content
+        await loadRecentContent([...movies, ...series]);
+        
+        // Recent users
+        await loadRecentUsers();
+        
+    } catch (error) {
+        console.error('❌ Error loading dashboard stats:', error);
+    }
+}
+
+async function loadRecentContent(content) {
+    const container = document.getElementById('recent-content');
+    if (!container) return;
+    
+    const sorted = content.sort((a, b) => {
+        const dateA = a.createdAt?.toDate?.() || new Date(0);
+        const dateB = b.createdAt?.toDate?.() || new Date(0);
+        return dateB - dateA;
+    }).slice(0, 5);
+    
+    container.innerHTML = sorted.map(item => `
+        <div class="recent-item">
+            <img src="${item.thumbnailUrl || 'https://via.placeholder.com/50x75'}" alt="${item.title}">
+            <div class="recent-info">
+                <span class="recent-title">${item.title}</span>
+                <span class="recent-type">${(item.type || '').toLowerCase() === 'series' ? 'Série' : 'Filme'}</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function loadRecentUsers() {
+    const container = document.getElementById('recent-users');
+    if (!container) return;
+    
+    try {
+        const snapshot = await firebase.firestore()
+            .collection('users')
+            .orderBy('createdAt', 'desc')
+            .limit(5)
+            .get();
+        
+        container.innerHTML = '';
+        snapshot.forEach(doc => {
+            const user = doc.data();
+            const plan = normalizeSubscription(user.subscription);
+            container.innerHTML += `
+                <div class="recent-item">
+                    <div class="user-avatar"><i class="fas fa-user"></i></div>
+                    <div class="recent-info">
+                        <span class="recent-title">${user.email}</span>
+                        <span class="recent-type">${plan}</span>
+                    </div>
+                </div>
+            `;
+        });
+    } catch (error) {
+        console.error('❌ Error loading recent users:', error);
+    }
+}
+
+// ============================================
+// MOVIES
+// ============================================
+
+async function loadMovies() {
+    try {
+        const movies = await window.firestoreModule.getAllMovies();
+        displayMoviesTable(movies);
+    } catch (error) {
+        console.error('❌ Error loading movies:', error);
+    }
+}
+
+function displayMoviesTable(movies) {
+    const tbody = document.getElementById('movies-list');
+    if (!tbody) return;
+    
+    tbody.innerHTML = movies.map(movie => `
+        <tr>
+            <td><img src="${movie.thumbnailUrl || 'https://via.placeholder.com/60x90'}" class="table-thumb" alt="${movie.title}"></td>
+            <td>${movie.title}</td>
+            <td>${movie.year || '-'}</td>
+            <td>${renderTagBadges(movie.tags || [])}</td>
+            <td><span class="subscription-badge ${(movie.subscriptionLevel || 'FREE').toLowerCase()}">${movie.subscriptionLevel || 'FREE'}</span></td>
+            <td>
+                <button class="btn-icon" onclick="editMovie('${movie.id}')" title="Editar">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn-icon btn-danger" onclick="confirmDeleteMovie('${movie.id}', '${movie.title.replace(/'/g, "\\'")}')" title="Excluir">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function renderTagBadges(tags) {
+    if (!tags || tags.length === 0) return '-';
+    return tags.slice(0, 3).map(tag => `<span class="tag-badge">${tag}</span>`).join(' ');
+}
+
+function openMovieModal(movieId = null) {
+    document.getElementById('movie-modal-title').textContent = movieId ? 'Editar Filme' : 'Novo Filme';
+    document.getElementById('movie-form').reset();
+    document.getElementById('movie-id').value = movieId || '';
+    
+    populateTagsSelector('movie-tags-selector');
+    
+    document.getElementById('movie-modal').classList.add('active');
+}
+
+function closeMovieModal() {
+    document.getElementById('movie-modal').classList.remove('active');
+}
+
+async function editMovie(movieId) {
+    const movie = await window.firestoreModule.getMovieById(movieId);
+    if (!movie) return;
+    
+    openMovieModal(movieId);
+    
+    document.getElementById('movie-title').value = movie.title;
+    document.getElementById('movie-description').value = movie.description || '';
+    document.getElementById('movie-year').value = movie.year || '';
+    document.getElementById('movie-duration').value = movie.duration || '';
+    document.getElementById('movie-video-url').value = movie.videoUrl || '';
+    document.getElementById('movie-thumbnail').value = movie.thumbnailUrl || '';
+    document.getElementById('movie-banner').value = movie.bannerUrl || '';
+    document.getElementById('movie-rating').value = movie.rating || 'L';
+    document.getElementById('movie-is-kids').checked = movie.isKidsSafe || false;
+    document.getElementById('movie-subscription-level').value = movie.subscriptionLevel || 'FREE';
+    
+    // Select tags
+    setTimeout(() => {
+        (movie.tags || []).forEach(tag => {
+            const tagEl = document.querySelector(`#movie-tags-selector .tag-option[data-tag="${tag}"]`);
+            if (tagEl) tagEl.classList.add('selected');
+        });
+    }, 100);
+}
+
+async function handleMovieForm(e) {
+    e.preventDefault();
+    
+    const movieId = document.getElementById('movie-id').value;
+    const selectedTags = Array.from(document.querySelectorAll('#movie-tags-selector .tag-option.selected'))
+        .map(el => el.dataset.tag);
+    
+    // Handle image file uploads
+    const thumbnailFile = document.getElementById('movie-thumbnail-file')?.files?.[0] || null;
+    const bannerFile = document.getElementById('movie-banner-file')?.files?.[0] || null;
+    
+    let thumbnailUrl = document.getElementById('movie-thumbnail').value;
+    let bannerUrl = document.getElementById('movie-banner').value;
+    
+    try {
+        showLoading();
+        const now = Date.now();
+        
+        // Upload thumbnail if file provided
+        if (thumbnailFile) {
+            const thumbPath = `uploads/images/movie_thumb_${now}_${thumbnailFile.name}`;
+            thumbnailUrl = await uploadFileToStorage(thumbnailFile, thumbPath);
+        }
+        
+        // Upload banner if file provided
+        if (bannerFile) {
+            const bannerPath = `uploads/images/movie_banner_${now}_${bannerFile.name}`;
+            bannerUrl = await uploadFileToStorage(bannerFile, bannerPath);
+        }
+        
+        const movieData = {
+            title: document.getElementById('movie-title').value,
+            description: document.getElementById('movie-description').value,
+            year: parseInt(document.getElementById('movie-year').value) || null,
+            duration: parseInt(document.getElementById('movie-duration').value) || 0,
+            videoUrl: document.getElementById('movie-video-url').value,
+            thumbnailUrl: thumbnailUrl,
+            bannerUrl: bannerUrl,
+            rating: document.getElementById('movie-rating').value,
+            isKidsSafe: document.getElementById('movie-is-kids').checked,
+            tags: selectedTags,
+            subscriptionLevel: document.getElementById('movie-subscription-level').value,
+            type: 'MOVIE'
+        };
+        
+        let result;
+        if (movieId) {
+            result = await window.firestoreModule.updateMovie(movieId, movieData);
+        } else {
+            result = await window.firestoreModule.addMovie(movieData);
+        }
+        
+        hideLoading();
+        
+        if (result.success) {
+            window.uiModule.showToast(movieId ? 'Filme atualizado!' : 'Filme adicionado!', 'success');
+            closeMovieModal();
+            loadMovies();
+        } else {
+            window.uiModule.showToast('Erro: ' + result.error, 'error');
+        }
+    } catch (error) {
+        hideLoading();
+        console.error('❌ Error saving movie:', error);
+        window.uiModule.showToast('Erro ao salvar filme: ' + error.message, 'error');
+    }
+}
+
+function confirmDeleteMovie(movieId, title) {
+    if (confirm(`Excluir "${title}"?`)) {
+        deleteMovie(movieId);
+    }
+}
+
+async function deleteMovie(movieId) {
+    const result = await window.firestoreModule.deleteMovie(movieId);
+    if (result.success) {
+        window.uiModule.showToast('Filme excluído!', 'success');
+        loadMovies();
+    } else {
+        window.uiModule.showToast('Erro: ' + result.error, 'error');
+    }
+}
+
+// ============================================
+// SERIES
+// ============================================
+
+async function loadSeries() {
+    try {
+        const series = await window.firestoreModule.getAllSeries();
+        allSeries = series;
+        displaySeriesTable(series);
+    } catch (error) {
+        console.error('❌ Error loading series:', error);
+    }
+}
+
+function displaySeriesTable(series) {
+    const tbody = document.getElementById('series-list');
+    if (!tbody) return;
+    
+    tbody.innerHTML = series.map(s => `
+        <tr>
+            <td><img src="${s.thumbnailUrl || 'https://via.placeholder.com/60x90'}" class="table-thumb" alt="${s.title}"></td>
+            <td>${s.title}</td>
+            <td>${s.totalSeasons || 1}</td>
+            <td>${s.episodeCount || 0}</td>
+            <td>${renderTagBadges(s.tags || [])}</td>
+            <td>
+                <button class="btn-icon" onclick="openEpisodesModal('${s.id}', '${s.title.replace(/'/g, "\\'")}')" title="Episódios">
+                    <i class="fas fa-list"></i>
+                </button>
+                <button class="btn-icon" onclick="editSeries('${s.id}')" title="Editar">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn-icon btn-danger" onclick="confirmDeleteSeries('${s.id}', '${s.title.replace(/'/g, "\\'")}')" title="Excluir">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function openSeriesModal(seriesId = null) {
+    document.getElementById('series-modal-title').textContent = seriesId ? 'Editar Série' : 'Nova Série';
+    document.getElementById('series-form').reset();
+    document.getElementById('series-id').value = seriesId || '';
+    
+    populateTagsSelector('series-tags-selector');
+    
+    document.getElementById('series-modal').classList.add('active');
+}
+
+function closeSeriesModal() {
+    document.getElementById('series-modal').classList.remove('active');
+}
+
+async function editSeries(seriesId) {
+    const series = await window.firestoreModule.getSeriesById(seriesId);
+    if (!series) return;
+    
+    openSeriesModal(seriesId);
+    
+    document.getElementById('series-title').value = series.title;
+    document.getElementById('series-description').value = series.description || '';
+    document.getElementById('series-year').value = series.year || '';
+    document.getElementById('series-seasons').value = series.totalSeasons || 1;
+    document.getElementById('series-thumbnail').value = series.thumbnailUrl || '';
+    document.getElementById('series-banner').value = series.bannerUrl || '';
+    document.getElementById('series-rating').value = series.rating || 'L';
+    document.getElementById('series-is-kids').checked = series.isKidsSafe || false;
+    document.getElementById('series-subscription-level').value = series.subscriptionLevel || 'FREE';
+    
+    setTimeout(() => {
+        (series.tags || []).forEach(tag => {
+            const tagEl = document.querySelector(`#series-tags-selector .tag-option[data-tag="${tag}"]`);
+            if (tagEl) tagEl.classList.add('selected');
+        });
+    }, 100);
+}
+
+async function handleSeriesForm(e) {
+    e.preventDefault();
+    
+    const seriesId = document.getElementById('series-id').value;
+    const selectedTags = Array.from(document.querySelectorAll('#series-tags-selector .tag-option.selected'))
+        .map(el => el.dataset.tag);
+    
+    // Handle image file uploads
+    const thumbnailFile = document.getElementById('series-thumbnail-file')?.files?.[0] || null;
+    const bannerFile = document.getElementById('series-banner-file')?.files?.[0] || null;
+    
+    let thumbnailUrl = document.getElementById('series-thumbnail').value;
+    let bannerUrl = document.getElementById('series-banner').value;
+    
+    try {
+        showLoading();
+        const now = Date.now();
+        
+        // Upload thumbnail if file provided
+        if (thumbnailFile) {
+            const thumbPath = `uploads/images/series_thumb_${now}_${thumbnailFile.name}`;
+            thumbnailUrl = await uploadFileToStorage(thumbnailFile, thumbPath);
+        }
+        
+        // Upload banner if file provided
+        if (bannerFile) {
+            const bannerPath = `uploads/images/series_banner_${now}_${bannerFile.name}`;
+            bannerUrl = await uploadFileToStorage(bannerFile, bannerPath);
+        }
+        
+        const seriesData = {
+            title: document.getElementById('series-title').value,
+            description: document.getElementById('series-description').value,
+            year: parseInt(document.getElementById('series-year').value) || null,
+            totalSeasons: parseInt(document.getElementById('series-seasons').value) || 1,
+            thumbnailUrl: thumbnailUrl,
+            bannerUrl: bannerUrl,
+            rating: document.getElementById('series-rating').value,
+            isKidsSafe: document.getElementById('series-is-kids').checked,
+            tags: selectedTags,
+            subscriptionLevel: document.getElementById('series-subscription-level').value,
+            type: 'SERIES'
+        };
+        
+        let result;
+        if (seriesId) {
+            result = await window.firestoreModule.updateSeries(seriesId, seriesData);
+        } else {
+            result = await window.firestoreModule.addSeries(seriesData);
+        }
+        
+        hideLoading();
+        
+        if (result.success) {
+            window.uiModule.showToast(seriesId ? 'Série atualizada!' : 'Série adicionada!', 'success');
+            closeSeriesModal();
+            loadSeries();
+        } else {
+            window.uiModule.showToast('Erro: ' + result.error, 'error');
+        }
+    } catch (error) {
+        hideLoading();
+        console.error('❌ Error saving series:', error);
+        window.uiModule.showToast('Erro ao salvar série: ' + error.message, 'error');
+    }
+}
+
+function confirmDeleteSeries(seriesId, title) {
+    if (confirm(`Excluir "${title}" e todos os episódios?`)) {
+        deleteSeries(seriesId);
+    }
+}
+
+async function deleteSeries(seriesId) {
+    const result = await window.firestoreModule.deleteSeries(seriesId);
+    if (result.success) {
+        window.uiModule.showToast('Série excluída!', 'success');
+        loadSeries();
+    } else {
+        window.uiModule.showToast('Erro: ' + result.error, 'error');
+    }
+}
+
+// ============================================
+// EPISODES
+// ============================================
+
+async function openEpisodesModal(seriesId, seriesTitle) {
+    currentSeriesId = seriesId;
+    document.getElementById('episodes-modal-title').textContent = `Episódios - ${seriesTitle}`;
+    document.getElementById('episode-series-id').value = seriesId;
+    
+    // Get series to populate season filter
+    const series = await window.firestoreModule.getSeriesById(seriesId);
+    const seasonFilter = document.getElementById('season-filter');
+    seasonFilter.innerHTML = '<option value="">Todas as temporadas</option>';
+    for (let i = 1; i <= (series.totalSeasons || 1); i++) {
+        seasonFilter.innerHTML += `<option value="${i}">Temporada ${i}</option>`;
+    }
+    
+    await loadEpisodes(seriesId);
+    closeEpisodeForm();
+    
+    document.getElementById('episodes-modal').classList.add('active');
+}
+
+function closeEpisodesModal() {
+    document.getElementById('episodes-modal').classList.remove('active');
+    currentSeriesId = null;
+}
+
+async function loadEpisodes(seriesId, seasonFilter = null) {
+    try {
+        const episodes = await window.firestoreModule.getEpisodesBySeries(seriesId);
+        let filtered = episodes;
+        
+        if (seasonFilter) {
+            filtered = episodes.filter(ep => ep.season === parseInt(seasonFilter));
+        }
+        
+        displayEpisodesList(filtered);
+    } catch (error) {
+        console.error('❌ Error loading episodes:', error);
+    }
+}
+
+function displayEpisodesList(episodes) {
+    const container = document.getElementById('episodes-list');
+    if (!container) return;
+    
+    if (episodes.length === 0) {
+        container.innerHTML = '<p class="empty-message">Nenhum episódio cadastrado.</p>';
+        return;
+    }
+    
+    // Group by season
+    const grouped = episodes.reduce((acc, ep) => {
+        const season = ep.season || 1;
+        if (!acc[season]) acc[season] = [];
+        acc[season].push(ep);
+        return acc;
+    }, {});
+    
+    let html = '';
+    Object.keys(grouped).sort((a, b) => a - b).forEach(season => {
+        html += `<div class="season-group">
+            <h4>Temporada ${season}</h4>
+            <div class="episodes-grid">
+                ${grouped[season].sort((a, b) => a.episodeNumber - b.episodeNumber).map(ep => `
+                    <div class="episode-card">
+                        <img src="${ep.thumbnailUrl || 'https://via.placeholder.com/160x90'}" alt="${ep.title}">
+                        <div class="episode-info">
+                            <span class="episode-number">E${ep.episodeNumber}</span>
+                            <span class="episode-title">${ep.title}</span>
+                            <span class="episode-duration">${ep.duration || '?'} min</span>
+                        </div>
+                        <div class="episode-actions">
+                            <button onclick="editEpisode('${ep.id}')" title="Editar"><i class="fas fa-edit"></i></button>
+                            <button onclick="confirmDeleteEpisode('${ep.id}', '${ep.title.replace(/'/g, "\\'")}')" title="Excluir"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>`;
+    });
+    
+    container.innerHTML = html;
+}
+
+function filterEpisodesBySeason() {
+    const season = document.getElementById('season-filter').value;
+    loadEpisodes(currentSeriesId, season);
+}
+
+function openEpisodeForm() {
+    document.getElementById('episode-form').reset();
+    document.getElementById('episode-id').value = '';
+    document.getElementById('episode-form-container').style.display = 'block';
+}
+
+function closeEpisodeForm() {
+    document.getElementById('episode-form-container').style.display = 'none';
+}
+
+async function editEpisode(episodeId) {
+    const episode = await window.firestoreModule.getEpisodeById(episodeId);
+    if (!episode) return;
+    
+    openEpisodeForm();
+    
+    document.getElementById('episode-id').value = episode.id;
+    document.getElementById('episode-season').value = episode.season || 1;
+    document.getElementById('episode-number').value = episode.episodeNumber || 1;
+    document.getElementById('episode-title').value = episode.title;
+    document.getElementById('episode-description').value = episode.description || '';
+    document.getElementById('episode-video-url').value = episode.videoUrl || '';
+    document.getElementById('episode-duration').value = episode.duration || '';
+    document.getElementById('episode-thumbnail').value = episode.thumbnailUrl || '';
+}
+
+async function handleEpisodeForm(e) {
+    e.preventDefault();
+    
+    const episodeId = document.getElementById('episode-id').value;
+    const seriesId = document.getElementById('episode-series-id').value;
+    
+    // Upload de imagem de thumbnail se fornecido arquivo
+    const thumbnailFile = document.getElementById('episode-thumbnail-file').files[0];
+    let thumbnailUrl = document.getElementById('episode-thumbnail').value;
+    
+    if (thumbnailFile) {
+        window.uiModule.showLoading();
+        try {
+            const uploadedUrl = await uploadFileToStorage(thumbnailFile, `thumbnails/episodes/${Date.now()}_${thumbnailFile.name}`);
+            if (uploadedUrl) {
+                thumbnailUrl = uploadedUrl;
+            }
+        } catch (err) {
+            console.error('Erro ao fazer upload de thumbnail:', err);
+            window.uiModule.showToast('Erro ao fazer upload de imagem', 'error');
+        }
+        window.uiModule.hideLoading();
+    }
+    
+    const episodeData = {
+        seriesId: seriesId,
+        season: parseInt(document.getElementById('episode-season').value) || 1,
+        episodeNumber: parseInt(document.getElementById('episode-number').value) || 1,
+        title: document.getElementById('episode-title').value,
+        description: document.getElementById('episode-description').value,
+        videoUrl: document.getElementById('episode-video-url').value,
+        duration: parseInt(document.getElementById('episode-duration').value) || 0,
+        thumbnailUrl: thumbnailUrl,
+        type: 'EPISODE'
+    };
+    
+    let result;
+    if (episodeId) {
+        result = await window.firestoreModule.updateEpisode(episodeId, episodeData);
+    } else {
+        result = await window.firestoreModule.addEpisode(episodeData);
+    }
+    
+    if (result.success) {
+        window.uiModule.showToast(episodeId ? 'Episódio atualizado!' : 'Episódio adicionado!', 'success');
+        closeEpisodeForm();
+        loadEpisodes(seriesId);
+        
+        // Update episode count
+        loadSeries();
+    } else {
+        window.uiModule.showToast('Erro: ' + result.error, 'error');
+    }
+}
+
+function confirmDeleteEpisode(episodeId, title) {
+    if (confirm(`Excluir "${title}"?`)) {
+        deleteEpisode(episodeId);
+    }
+}
+
+async function deleteEpisode(episodeId) {
+    const result = await window.firestoreModule.deleteEpisode(episodeId);
+    if (result.success) {
+        window.uiModule.showToast('Episódio excluído!', 'success');
+        loadEpisodes(currentSeriesId);
+        loadSeries();
+    } else {
+        window.uiModule.showToast('Erro: ' + result.error, 'error');
+    }
+}
+
+// ============================================
+// TAGS
+// ============================================
+
+async function loadTags() {
+    try {
+        allTags = await window.firestoreModule.getAllTags();
+        displayTagsGrid();
+    } catch (error) {
+        console.error('❌ Error loading tags:', error);
+    }
+}
+
+function displayTagsGrid() {
+    const container = document.getElementById('tags-list');
+    if (!container) return;
+    
+    if (allTags.length === 0) {
+        container.innerHTML = '<p class="empty-message">Nenhuma tag cadastrada. Crie tags para categorizar seu conteúdo.</p>';
+        return;
+    }
+    
+    container.innerHTML = allTags.map(tag => `
+        <div class="tag-card" style="border-color: ${tag.color || '#e50914'}">
+            <span class="tag-name" style="color: ${tag.color || '#e50914'}">${tag.name}</span>
+            <div class="tag-actions">
+                <button onclick="editTag('${tag.id}', '${tag.name}', '${tag.color || '#e50914'}')" title="Editar">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="confirmDeleteTag('${tag.id}', '${tag.name}')" title="Excluir">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function populateTagsSelector(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    if (allTags.length === 0) {
+        container.innerHTML = '<span class="no-tags">Nenhuma tag disponível. <a href="#" onclick="navigateToTags()">Criar tags</a></span>';
+        return;
+    }
+    
+    container.innerHTML = allTags.map(tag => `
+        <span class="tag-option" data-tag="${tag.name}" style="--tag-color: ${tag.color || '#e50914'}" onclick="toggleTagSelection(this)">
+            ${tag.name}
+        </span>
+    `).join('');
+}
+
+function toggleTagSelection(element) {
+    element.classList.toggle('selected');
+}
+
+function navigateToTags() {
+    document.querySelector('.nav-item[data-section="tags"]').click();
+}
+
+function openTagModal(tagId = null) {
+    document.getElementById('tag-modal-title').textContent = tagId ? 'Editar Tag' : 'Nova Tag';
+    document.getElementById('tag-form').reset();
+    document.getElementById('tag-id').value = tagId || '';
+
+    // Color input + preview setup
+    const defaultColor = '#e50914';
+    const colorInput = document.getElementById('tag-color');
+    const colorPreview = document.getElementById('tag-color-preview');
+    const colorHex = document.getElementById('tag-color-hex');
+
+    if (colorInput) {
+        // ensure a value
+        const v = colorInput.value || defaultColor;
+        colorInput.value = v;
+        if (colorPreview) colorPreview.style.background = v;
+        if (colorHex) colorHex.value = v;
+
+        // remove old handlers if present
+        if (window._tagColorInputHandler) colorInput.removeEventListener('input', window._tagColorInputHandler);
+        window._tagColorInputHandler = (e) => {
+            const val = e.target.value;
+            if (colorPreview) colorPreview.style.background = val;
+            if (colorHex) colorHex.value = val;
+        };
+        colorInput.addEventListener('input', window._tagColorInputHandler);
+    }
+
+    if (colorHex) {
+        if (window._tagColorHexHandler) colorHex.removeEventListener('input', window._tagColorHexHandler);
+        window._tagColorHexHandler = (e) => {
+            const v = e.target.value.trim();
+            if (/^#([0-9A-Fa-f]{3}){1,2}$/.test(v)) {
+                if (colorInput) colorInput.value = v;
+                if (colorPreview) colorPreview.style.background = v;
+            }
+        };
+        colorHex.addEventListener('input', window._tagColorHexHandler);
+    }
+
+    document.getElementById('tag-modal').classList.add('active');
+}
+
+function closeTagModal() {
+    document.getElementById('tag-modal').classList.remove('active');
+}
+
+function editTag(tagId, name, color) {
+    openTagModal(tagId);
+    document.getElementById('tag-name').value = name;
+    const colorInput = document.getElementById('tag-color');
+    const colorPreview = document.getElementById('tag-color-preview');
+    const colorHex = document.getElementById('tag-color-hex');
+    const c = color || '#e50914';
+    if (colorInput) colorInput.value = c;
+    if (colorPreview) colorPreview.style.background = c;
+    if (colorHex) colorHex.value = c;
+}
+
+async function handleTagForm(e) {
+    e.preventDefault();
+    
+    const tagId = document.getElementById('tag-id').value;
+    const tagData = {
+        name: document.getElementById('tag-name').value,
+        color: document.getElementById('tag-color').value
+    };
+    
+    let result;
+    if (tagId) {
+        result = await window.firestoreModule.updateTag(tagId, tagData);
+    } else {
+        result = await window.firestoreModule.createTag(tagData);
+    }
+    
+    if (result.success) {
+        window.uiModule.showToast(tagId ? 'Tag atualizada!' : 'Tag criada!', 'success');
+        closeTagModal();
+        loadTags();
+    } else {
+        window.uiModule.showToast('Erro: ' + result.error, 'error');
+    }
+}
+
+function confirmDeleteTag(tagId, name) {
+    if (confirm(`Excluir tag "${name}"?`)) {
+        deleteTag(tagId);
+    }
+}
+
+async function deleteTag(tagId) {
+    const result = await window.firestoreModule.deleteTag(tagId);
+    if (result.success) {
+        window.uiModule.showToast('Tag excluída!', 'success');
+        loadTags();
+    } else {
+        window.uiModule.showToast('Erro: ' + result.error, 'error');
+    }
+}
+
+// ============================================
+// USERS
+// ============================================
+
 async function loadUsers() {
     try {
-        const snapshot = await firebaseDB.collection('users').get();
+        const snapshot = await firebase.firestore().collection('users').get();
         const users = [];
-        snapshot.forEach(doc => {
-            users.push({ id: doc.id, ...doc.data() });
-        });
+        
+        for (const doc of snapshot.docs) {
+            const userData = { id: doc.id, ...doc.data() };
+            
+            // Get profile count
+            const profilesSnapshot = await firebase.firestore()
+                .collection('users').doc(doc.id)
+                .collection('profiles').get();
+            userData.profileCount = profilesSnapshot.size;
+            
+            users.push(userData);
+        }
+        
         displayUsersTable(users);
     } catch (error) {
         console.error('❌ Error loading users:', error);
     }
 }
 
-// Display users in table
 function displayUsersTable(users) {
-    const tableBody = document.getElementById('users-table-body');
-    if (!tableBody) return;
+    const tbody = document.getElementById('users-list');
+    if (!tbody) return;
+    
+    tbody.innerHTML = users.map(user => {
+        const createdDate = user.createdAt?.toDate?.() 
+            ? user.createdAt.toDate().toLocaleDateString('pt-BR') 
+            : '-';
 
-    tableBody.innerHTML = '';
+        const plan = normalizeSubscription(user.subscription);
+        const planClass = String(plan).toLowerCase();
 
-    users.forEach(user => {
-        const row = document.createElement('tr');
-        const createdDate = user.createdAt ? new Date(user.createdAt.toDate()).toLocaleDateString('pt-BR') : 'N/A';
-
-        row.innerHTML = `
-            <td>${user.displayName || user.email}</td>
-            <td>${user.email}</td>
-            <td><span class="role-badge ${user.role}">${user.role}</span></td>
-            <td>${createdDate}</td>
-            <td>
-                <button class="btn-edit" onclick="window.adminModule.toggleUserRole('${user.uid}', '${user.role}')">
-                    ${user.role === 'admin' ? 'Remover Admin' : 'Tornar Admin'}
-                </button>
-                <button class="btn-delete" onclick="window.adminModule.confirmDeleteUser('${user.uid}', '${user.email}')">Excluir</button>
-            </td>
+        return `
+            <tr>
+                <td><div class="user-avatar-small"><i class="fas fa-user"></i></div></td>
+                <td>${user.email || '-'}</td>
+                <td>${user.profileCount || 0}</td>
+                <td><span class="subscription-badge ${planClass}">${plan}</span></td>
+                <td>${createdDate}</td>
+                <td>
+                    <button class="btn-icon" onclick="changeUserSubscription('${user.id}')" title="Alterar Plano">
+                        <i class="fas fa-crown"></i>
+                    </button>
+                    <button class="btn-icon btn-danger" onclick="confirmDeleteUser('${user.id}', '${user.email}')" title="Excluir">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
         `;
-        tableBody.appendChild(row);
-    });
+    }).join('');
 }
 
-// Toggle user role
-async function toggleUserRole(userId, currentRole) {
-    const newRole = currentRole === 'admin' ? 'user' : 'admin';
-
+async function changeUserSubscription(userId) {
+    const newPlan = prompt('Novo plano (FREE, BASIC ou PREMIUM):');
+    if (!newPlan) return;
+    
+    const validPlans = ['FREE', 'BASIC', 'PREMIUM'];
+    if (!validPlans.includes(newPlan.toUpperCase())) {
+        window.uiModule.showToast('Plano inválido!', 'error');
+        return;
+    }
+    
     try {
-        await firebaseDB.collection('users').doc(userId).update({ role: newRole });
-        window.uiModule.showToast(`Role atualizado para ${newRole}!`, 'success');
+        // Store subscription as an object with `plan` to match other parts of the app
+        await firebase.firestore().collection('users').doc(userId).update({
+            subscription: {
+                plan: newPlan.toUpperCase(),
+                startDate: firebase.firestore.FieldValue.serverTimestamp(),
+                endDate: null
+            }
+        });
+        window.uiModule.showToast('Plano atualizado!', 'success');
         loadUsers();
+        loadSubscriptionStats();
     } catch (error) {
-        console.error('❌ Error updating role:', error);
-        window.uiModule.showToast('Erro ao atualizar role', 'error');
+        window.uiModule.showToast('Erro ao atualizar plano', 'error');
     }
 }
 
-// Confirm delete user
 function confirmDeleteUser(userId, email) {
-    if (confirm(`Tem certeza que deseja excluir o usuário "${email}"?`)) {
-        deleteUserAdmin(userId);
+    if (confirm(`Excluir usuário "${email}" e todos os seus dados?`)) {
+        deleteUser(userId);
     }
 }
 
-// Delete user
-async function deleteUserAdmin(userId) {
+async function deleteUser(userId) {
     try {
-        await firebaseDB.collection('users').doc(userId).delete();
-        window.uiModule.showToast('Usuário excluído com sucesso!', 'success');
+        // Delete profiles subcollection
+        const profilesSnapshot = await firebase.firestore()
+            .collection('users').doc(userId)
+            .collection('profiles').get();
+        
+        const batch = firebase.firestore().batch();
+        profilesSnapshot.forEach(doc => batch.delete(doc.ref));
+        
+        // Delete user document
+        batch.delete(firebase.firestore().collection('users').doc(userId));
+        
+        await batch.commit();
+        
+        window.uiModule.showToast('Usuário excluído!', 'success');
         loadUsers();
     } catch (error) {
         console.error('❌ Error deleting user:', error);
@@ -208,461 +1060,437 @@ async function deleteUserAdmin(userId) {
 }
 
 // ============================================
-// COMMENT MODERATION
+// SUBSCRIPTIONS
 // ============================================
 
-// Load all comments for moderation
-async function loadCommentsForModeration() {
-    const comments = await window.firestoreModule.getAllComments();
-    displayCommentsTable(comments);
+async function loadSubscriptionStats() {
+    try {
+        const snapshot = await firebase.firestore().collection('users').get();
+        
+        let freeCount = 0, basicCount = 0, premiumCount = 0;
+        
+        snapshot.forEach(doc => {
+            const sub = normalizeSubscription(doc.data().subscription);
+            if (sub === 'FREE') freeCount++;
+            else if (sub === 'BASIC') basicCount++;
+            else if (sub === 'PREMIUM') premiumCount++;
+        });
+        
+        document.getElementById('free-users-count').textContent = freeCount;
+        document.getElementById('basic-users-count').textContent = basicCount;
+        document.getElementById('premium-users-count').textContent = premiumCount;
+        
+    } catch (error) {
+        console.error('❌ Error loading subscription stats:', error);
+    }
 }
 
-// Display comments in table
-function displayCommentsTable(comments) {
-    const tableBody = document.getElementById('comments-table-body');
-    if (!tableBody) return;
+// ============================================
+// COMMENTS
+// ============================================
 
-    tableBody.innerHTML = '';
-
-    comments.forEach(comment => {
-        const row = document.createElement('tr');
-        const statusClass = comment.approved ? 'approved' : 'pending';
-        const statusText = comment.approved ? 'Aprovado' : 'Pendente';
-
-        row.innerHTML = `
-            <td>${comment.userName}</td>
-            <td>${comment.content}</td>
-            <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-            <td>
-                ${!comment.approved ? `<button class="btn-approve" onclick="window.adminModule.approveComment('${comment.id}')">Aprovar</button>` : ''}
-                <button class="btn-delete" onclick="window.adminModule.confirmDeleteComment('${comment.id}')">Excluir</button>
-            </td>
-        `;
-        tableBody.appendChild(row);
-    });
+async function loadComments() {
+    try {
+        const filter = document.getElementById('filter-comments')?.value || 'pending';
+        const comments = await window.firestoreModule.getAllComments();
+        
+        let filtered = comments;
+        if (filter === 'pending') {
+            filtered = comments.filter(c => !c.approved);
+        } else if (filter === 'approved') {
+            filtered = comments.filter(c => c.approved);
+        }
+        
+        displayCommentsList(filtered);
+    } catch (error) {
+        console.error('❌ Error loading comments:', error);
+    }
 }
 
-// Approve comment
-async function approveCommentAdmin(commentId) {
+function displayCommentsList(comments) {
+    const container = document.getElementById('comments-list');
+    if (!container) return;
+    
+    if (comments.length === 0) {
+        container.innerHTML = '<p class="empty-message">Nenhum comentário encontrado.</p>';
+        return;
+    }
+    
+    container.innerHTML = comments.map(comment => `
+        <div class="comment-card ${comment.approved ? 'approved' : 'pending'}">
+            <div class="comment-header">
+                <span class="comment-user">${comment.userName || 'Anônimo'}</span>
+                <span class="comment-status ${comment.approved ? 'approved' : 'pending'}">
+                    ${comment.approved ? 'Aprovado' : 'Pendente'}
+                </span>
+            </div>
+            <p class="comment-content">${comment.content}</p>
+            <div class="comment-footer">
+                <span class="comment-video">Vídeo: ${comment.videoTitle || comment.videoId}</span>
+                <div class="comment-actions">
+                    ${!comment.approved ? `
+                        <button class="btn-approve" onclick="approveComment('${comment.id}')">
+                            <i class="fas fa-check"></i> Aprovar
+                        </button>
+                    ` : ''}
+                    <button class="btn-delete" onclick="confirmDeleteComment('${comment.id}')">
+                        <i class="fas fa-trash"></i> Excluir
+                    </button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function approveComment(commentId) {
     const result = await window.firestoreModule.approveComment(commentId);
-
     if (result.success) {
         window.uiModule.showToast('Comentário aprovado!', 'success');
-        loadCommentsForModeration();
+        loadComments();
     } else {
-        window.uiModule.showToast('Erro ao aprovar comentário', 'error');
+        window.uiModule.showToast('Erro ao aprovar', 'error');
     }
 }
 
-// Confirm delete comment
 function confirmDeleteComment(commentId) {
-    if (confirm('Tem certeza que deseja excluir este comentário?')) {
-        deleteCommentAdmin(commentId);
+    if (confirm('Excluir este comentário?')) {
+        deleteComment(commentId);
     }
 }
 
-// Delete comment
-async function deleteCommentAdmin(commentId) {
+async function deleteComment(commentId) {
     const result = await window.firestoreModule.deleteComment(commentId);
-
     if (result.success) {
         window.uiModule.showToast('Comentário excluído!', 'success');
-        loadCommentsForModeration();
+        loadComments();
     } else {
-        window.uiModule.showToast('Erro ao excluir comentário', 'error');
+        window.uiModule.showToast('Erro ao excluir', 'error');
     }
 }
 
 // ============================================
-// ANALYTICS
+// UPLOAD FORM
 // ============================================
 
-// Load dashboard analytics
-async function loadAnalytics() {
+async function populateUploadForm() {
+    // Populate tags selector
+    populateTagsSelector('upload-tags-selector');
+    
+    // Sempre carregar séries do Firestore para garantir lista atualizada
     try {
-        const videos = await window.firestoreModule.getAllVideos();
-        const totalVideos = document.getElementById('total-videos');
-        if (totalVideos) totalVideos.textContent = videos.length;
-
-        const totalViews = videos.reduce((sum, video) => sum + (video.viewCount || 0), 0);
-        const totalViewsEl = document.getElementById('total-views');
-        if (totalViewsEl) totalViewsEl.textContent = totalViews;
-
-        const usersSnapshot = await firebaseDB.collection('users').get();
-        const totalUsersEl = document.getElementById('total-users');
-        if (totalUsersEl) totalUsersEl.textContent = usersSnapshot.size;
-
-        const comments = await window.firestoreModule.getAllComments();
-        const pendingComments = comments.filter(c => !c.approved).length;
-        const pendingEl = document.getElementById('pending-comments');
-        if (pendingEl) pendingEl.textContent = pendingComments;
-
-    } catch (error) {
-        console.error('❌ Error loading analytics:', error);
+        const series = await window.firestoreModule.getAllSeries();
+        allSeries = series; // atualiza cache global também
+    } catch (err) {
+        console.warn('Erro ao carregar séries para upload:', err);
     }
-}
-
-// ============================================
-// HLS VIDEO UPLOAD
-// ============================================
-
-let currentUploadTask = null;
-
-function handleFileSelect(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const maxSize = 2 * 1024 * 1024 * 1024; // 2GB
-    if (file.size > maxSize) {
-        window.uiModule.showToast('Arquivo muito grande! Máximo: 2GB', 'error');
-        event.target.value = '';
-        return;
-    }
-
-    const validTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska'];
-    if (!validTypes.includes(file.type) && !file.name.match(/\.(mp4|mov|avi|mkv)$/i)) {
-        window.uiModule.showToast('Formato de arquivo inválido!', 'error');
-        event.target.value = '';
-        return;
-    }
-
-    console.log('✅ Arquivo selecionado:', file.name, `(${(file.size / 1024 / 1024).toFixed(2)}MB)`);
-    window.uiModule.showToast(`Arquivo selecionado: ${file.name}`, 'success');
-}
-
-async function handleUploadForm(event) {
-    event.preventDefault();
-
-    const form = event.target;
-    const fileInput = form.videoFile;
-    const file = fileInput.files[0];
-
-    if (!file) {
-        window.uiModule.showToast('Selecione um arquivo de vídeo!', 'error');
-        return;
-    }
-
-    const formData = {
-        title: form.title.value.trim(),
-        description: form.description.value.trim(),
-        tags: form.tags.value.split(',').map(tag => tag.trim()).filter(tag => tag),
-        quality: form.quality ? form.quality.value : 'medium',
-        thumbnailUrl: form.thumbnailUrl ? form.thumbnailUrl.value.trim() : '',
-        isKidsSafe: form.isKidsSafe ? form.isKidsSafe.checked : false,
-        resolutions: []
-    };
-
-    // Get selected resolutions
-    if (form.res_360p && form.res_360p.checked) formData.resolutions.push('360p');
-    if (form.res_480p && form.res_480p.checked) formData.resolutions.push('480p');
-    if (form.res_720p && form.res_720p.checked) formData.resolutions.push('720p');
-    if (form.res_1080p && form.res_1080p.checked) formData.resolutions.push('1080p');
-
-    if (formData.resolutions.length === 0) {
-        formData.resolutions = ['720p']; // Default
-    }
-
-    toggleFormState(false);
-    showProgress();
-
-    try {
-        updateProgress(10, 'Fazendo upload do vídeo original...', 'Enviando arquivo para o servidor');
-        const videoUrl = await uploadOriginalVideo(file, formData.title);
-
-        updateProgress(40, 'Processando vídeo para HLS...', 'Gerando segmentos de streaming');
-        const hlsData = await processVideoToHLS(file, formData, videoUrl);
-
-        updateProgress(70, 'Enviando segmentos HLS...', 'Finalizando upload');
-        const hlsUrl = await uploadHLSSegments(hlsData, formData.title);
-
-        if (!formData.thumbnailUrl) {
-            updateProgress(85, 'Gerando miniatura...', 'Criando thumbnail do vídeo');
-            formData.thumbnailUrl = await generateAndUploadThumbnail(file, formData.title);
-        }
-
-        const duration = await getVideoDuration(file);
-
-        updateProgress(95, 'Salvando no banco de dados...', 'Finalizando');
-        const videoData = {
-            title: formData.title,
-            description: formData.description,
-            tags: formData.tags,
-            hlsUrl: hlsUrl,
-            thumbnailUrl: formData.thumbnailUrl,
-            duration: duration,
-            isKidsSafe: formData.isKidsSafe,
-            originalVideoUrl: videoUrl,
-            resolutions: formData.resolutions,
-            quality: formData.quality
-        };
-
-        const result = await window.firestoreModule.addVideo(videoData);
-
-        if (result.success) {
-            updateProgress(100, 'Concluído!', 'Vídeo processado e salvo com sucesso');
-            window.uiModule.showToast('Vídeo processado e adicionado com sucesso!', 'success');
-
-            setTimeout(() => {
-                form.reset();
-                hideProgress();
-                toggleFormState(true);
-                loadAdminVideos();
-            }, 2000);
-        } else {
-            throw new Error(result.error);
-        }
-
-    } catch (error) {
-        console.error('❌ Error processing video:', error);
-        window.uiModule.showToast('Erro ao processar vídeo: ' + error.message, 'error');
-        hideProgress();
-        toggleFormState(true);
-    }
-}
-
-async function uploadOriginalVideo(file, title) {
-    return new Promise((resolve, reject) => {
-        const timestamp = Date.now();
-        const sanitizedTitle = title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-        const ext = file.name.substring(file.name.lastIndexOf('.'));
-        const filename = `videos/originals/${sanitizedTitle}_${timestamp}${ext}`;
-
-        const storageRef = window.firebaseStorage.ref(filename);
-        const uploadTask = storageRef.put(file);
-
-        currentUploadTask = uploadTask;
-
-        uploadTask.on('state_changed',
-            (snapshot) => {
-                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 30;
-                updateProgress(10 + progress, 'Fazendo upload do vídeo original...',
-                    `${(snapshot.bytesTransferred / 1024 / 1024).toFixed(2)}MB / ${(snapshot.totalBytes / 1024 / 1024).toFixed(2)}MB`);
-            },
-            (error) => {
-                console.error('❌ Upload error:', error);
-                reject(error);
-            },
-            async () => {
-                const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
-                console.log('✅ Original video uploaded:', downloadURL);
-                resolve(downloadURL);
-            }
-        );
-    });
-}
-
-async function processVideoToHLS(file, formData, videoUrl) {
-    console.log('⚙️ Processing video to HLS format...');
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    return {
-        masterPlaylist: generateMasterPlaylist(formData.resolutions),
-        variants: formData.resolutions.map(res => ({
-            resolution: res,
-            playlist: generateVariantPlaylist(res),
-            segments: []
-        }))
-    };
-}
-
-function generateMasterPlaylist(resolutions) {
-    const resolutionData = {
-        '360p': { bandwidth: 800000, resolution: '640x360' },
-        '480p': { bandwidth: 1400000, resolution: '854x480' },
-        '720p': { bandwidth: 2800000, resolution: '1280x720' },
-        '1080p': { bandwidth: 5000000, resolution: '1920x1080' }
-    };
-
-    let playlist = '#EXTM3U\n#EXT-X-VERSION:3\n\n';
-
-    resolutions.forEach(res => {
-        const data = resolutionData[res];
-        if (data) {
-            playlist += `#EXT-X-STREAM-INF:BANDWIDTH=${data.bandwidth},RESOLUTION=${data.resolution}\n`;
-            playlist += `${res}/playlist.m3u8\n\n`;
-        }
-    });
-
-    return playlist;
-}
-
-function generateVariantPlaylist(resolution) {
-    return `#EXTM3U
-#EXT-X-VERSION:3
-#EXT-X-TARGETDURATION:10
-#EXT-X-MEDIA-SEQUENCE:0
-#EXT-X-PLAYLIST-TYPE:VOD
-#EXTINF:10.0,
-segment_0.ts
-#EXTINF:10.0,
-segment_1.ts
-#EXT-X-ENDLIST`;
-}
-
-async function uploadHLSSegments(hlsData, title) {
-    const timestamp = Date.now();
-    const sanitizedTitle = title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-    const basePath = `videos/hls/${sanitizedTitle}_${timestamp}`;
-
-    const masterPlaylistRef = window.firebaseStorage.ref(`${basePath}/master.m3u8`);
-    await masterPlaylistRef.putString(hlsData.masterPlaylist, 'raw', {
-        contentType: 'application/vnd.apple.mpegurl'
-    });
-
-    for (const variant of hlsData.variants) {
-        const variantPath = `${basePath}/${variant.resolution}`;
-        const playlistRef = window.firebaseStorage.ref(`${variantPath}/playlist.m3u8`);
-        await playlistRef.putString(variant.playlist, 'raw', {
-            contentType: 'application/vnd.apple.mpegurl'
+    
+    // Populate series selector
+    const seriesSelect = document.getElementById('upload-series-id');
+    if (seriesSelect) {
+        seriesSelect.innerHTML = '<option value="">Selecione a série</option>';
+        allSeries.forEach(s => {
+            seriesSelect.innerHTML += `<option value="${s.id}">${s.title}</option>`;
         });
     }
-
-    const masterUrl = await masterPlaylistRef.getDownloadURL();
-    console.log('✅ HLS uploaded:', masterUrl);
-
-    return masterUrl;
 }
 
-async function generateAndUploadThumbnail(file, title) {
-    return new Promise((resolve, reject) => {
-        const video = document.createElement('video');
-        video.preload = 'metadata';
+function toggleEpisodeFields() {
+    const contentType = document.getElementById('upload-content-type').value;
+    const isEpisode = contentType === 'EPISODE';
+    
+    document.getElementById('series-select-group').style.display = isEpisode ? 'block' : 'none';
+    document.querySelectorAll('.episode-fields').forEach(el => {
+        el.style.display = isEpisode ? 'flex' : 'none';
+    });
+}
 
-        video.onloadedmetadata = async () => {
-            video.currentTime = video.duration * 0.1;
+async function handleUploadForm(e) {
+    e.preventDefault();
+    const contentType = document.getElementById('upload-content-type').value;
+    const selectedTags = Array.from(document.querySelectorAll('#upload-tags-selector .tag-option.selected'))
+        .map(el => el.dataset.tag);
+
+    // Files
+    const videoFile = document.getElementById('upload-video-file')?.files?.[0] || null;
+    const thumbFile = document.getElementById('upload-thumbnail-file')?.files?.[0] || null;
+    const bannerFile = document.getElementById('upload-banner-file')?.files?.[0] || null;
+
+    // Fallback inputs
+    const hlsUrlInput = document.getElementById('hls-url').value.trim();
+    const thumbnailUrlInput = document.getElementById('upload-thumbnail').value.trim();
+
+    try {
+        showLoading();
+
+        // Determine duration (in seconds) and minutes
+        let durationSeconds = 0;
+        let durationMinutes = 0;
+
+        if (videoFile) {
+            durationSeconds = await getVideoDurationFromFile(videoFile);
+            durationMinutes = Math.ceil(durationSeconds / 60);
+            // populate duration input for admin convenience
+            document.getElementById('upload-duration').value = durationMinutes;
+        } else if (hlsUrlInput) {
+            // We cannot reliably compute duration for remote HLS from client without loading manifest; leave as 0
+            durationSeconds = 0;
+            durationMinutes = parseInt(document.getElementById('upload-duration').value) || 0;
+        }
+
+        // Upload assets to Firebase Storage if files provided
+        const uploads = {};
+        const now = Date.now();
+
+        if (thumbFile) {
+            const thumbPath = `uploads/images/thumb_${now}_${thumbFile.name}`;
+            uploads.thumbnailUrl = await uploadFileToStorage(thumbFile, thumbPath);
+        } else if (thumbnailUrlInput) {
+            uploads.thumbnailUrl = thumbnailUrlInput;
+        }
+
+        if (bannerFile) {
+            const bannerPath = `uploads/images/banner_${now}_${bannerFile.name}`;
+            uploads.bannerUrl = await uploadFileToStorage(bannerFile, bannerPath);
+        }
+
+        let finalVideoUrl = hlsUrlInput || '';
+        let awaitingTranscode = false;
+
+        if (videoFile) {
+            // Upload original video file and create a transcode job in Firestore so a Cloud Function can convert to HLS
+            const videoPath = `uploads/videos/original_${now}_${videoFile.name}`;
+            const uploadedUrl = await uploadFileToStorage(videoFile, videoPath);
+            // create transcode job in Firestore so backend/cloud function can convert to HLS
+            const jobRef = await firebase.firestore().collection('transcode_jobs').add({
+                storagePath: videoPath,
+                outputPrefix: `hls/videos/${now}_${videoFile.name}`,
+                status: 'pending',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                createdBy: (firebase.auth().currentUser && firebase.auth().currentUser.uid) || null
+            });
+            awaitingTranscode = true;
+            finalVideoUrl = uploadedUrl; // temporary URL until HLS is available
+        }
+
+        // Build data object
+        const baseData = {
+            title: document.getElementById('upload-title').value,
+            description: document.getElementById('upload-description').value,
+            videoUrl: finalVideoUrl,
+            thumbnailUrl: uploads.thumbnailUrl || thumbnailUrlInput || '',
+            bannerUrl: uploads.bannerUrl || '',
+            duration: Math.floor(durationSeconds), // seconds (used by player/progress)
+            durationMinutes: durationMinutes, // convenience for displays
+            tags: selectedTags,
+            subscriptionLevel: document.getElementById('upload-subscription-level').value,
+            hlsPending: awaitingTranscode
         };
 
-        video.onseeked = async () => {
-            try {
-                const canvas = document.createElement('canvas');
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
+        let result;
+        let videoDocPath = null;
 
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-                canvas.toBlob(async (blob) => {
-                    const timestamp = Date.now();
-                    const sanitizedTitle = title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-                    const filename = `thumbnails/${sanitizedTitle}_${timestamp}.jpg`;
-
-                    const storageRef = window.firebaseStorage.ref(filename);
-                    await storageRef.put(blob, { contentType: 'image/jpeg' });
-
-                    const downloadURL = await storageRef.getDownloadURL();
-                    console.log('✅ Thumbnail generated:', downloadURL);
-                    resolve(downloadURL);
-                }, 'image/jpeg', 0.8);
-
-            } catch (error) {
-                console.error('❌ Error generating thumbnail:', error);
-                reject(error);
+        if (contentType === 'EPISODE') {
+            const episodeData = {
+                ...baseData,
+                seriesId: document.getElementById('upload-series-id').value,
+                season: parseInt(document.getElementById('upload-season').value) || 1,
+                episodeNumber: parseInt(document.getElementById('upload-episode').value) || 1,
+                type: 'EPISODE'
+            };
+            result = await window.firestoreModule.addEpisode(episodeData);
+            if (result.success && result.id) {
+                videoDocPath = `episodes/${result.id}`;
             }
-        };
+        } else {
+            const movieData = {
+                ...baseData,
+                type: 'MOVIE'
+            };
+            result = await window.firestoreModule.addMovie(movieData);
+            if (result.success && result.id) {
+                videoDocPath = `movies/${result.id}`;
+            }
+        }
 
-        video.onerror = () => {
-            reject(new Error('Failed to load video for thumbnail generation'));
-        };
+        // If we have a transcode job pending and got the video doc path, update the job
+        if (awaitingTranscode && videoDocPath) {
+            // Find and update the most recent pending job created by this user
+            try {
+                const user = firebase.auth().currentUser;
+                const jobsQuery = await firebase.firestore().collection('transcode_jobs')
+                    .where('createdBy', '==', user.uid)
+                    .where('status', '==', 'pending')
+                    .orderBy('createdAt', 'desc')
+                    .limit(1)
+                    .get();
+                
+                if (!jobsQuery.empty) {
+                    await jobsQuery.docs[0].ref.update({
+                        videoDocPath: videoDocPath,
+                        videoCollection: contentType === 'EPISODE' ? 'episodes' : 'movies',
+                        videoDocId: result.id
+                    });
+                    console.log('✅ Updated transcode job with videoDocPath:', videoDocPath);
+                }
+            } catch (jobErr) {
+                console.warn('Could not update transcode job with videoDocPath:', jobErr);
+            }
+        }
 
-        video.src = URL.createObjectURL(file);
-    });
-}
+        hideLoading();
 
-async function getVideoDuration(file) {
-    return new Promise((resolve) => {
-        const video = document.createElement('video');
-        video.preload = 'metadata';
+        if (result.success) {
+            window.uiModule.showToast('Conteúdo adicionado com sucesso!' + (awaitingTranscode ? ' O vídeo será processado em breve.' : ''), 'success');
+            document.getElementById('upload-form').reset();
+            loadMovies();
+            loadSeries();
+        } else {
+            window.uiModule.showToast('Erro: ' + result.error, 'error');
+        }
 
-        video.onloadedmetadata = () => {
-            URL.revokeObjectURL(video.src);
-            resolve(Math.round(video.duration));
-        };
-
-        video.onerror = () => {
-            resolve(0);
-        };
-
-        video.src = URL.createObjectURL(file);
-    });
-}
-
-function showProgress() {
-    const container = document.getElementById('upload-progress-container');
-    if (container) container.style.display = 'block';
-
-    const submitBtn = document.getElementById('upload-submit-btn');
-    const cancelBtn = document.getElementById('upload-cancel-btn');
-
-    if (submitBtn) submitBtn.style.display = 'none';
-    if (cancelBtn) cancelBtn.style.display = 'inline-block';
-}
-
-function hideProgress() {
-    const container = document.getElementById('upload-progress-container');
-    if (container) container.style.display = 'none';
-
-    const submitBtn = document.getElementById('upload-submit-btn');
-    const cancelBtn = document.getElementById('upload-cancel-btn');
-
-    if (submitBtn) submitBtn.style.display = 'inline-block';
-    if (cancelBtn) cancelBtn.style.display = 'none';
-}
-
-function updateProgress(percentage, status, details) {
-    const fill = document.getElementById('progress-fill');
-    const statusEl = document.getElementById('progress-status');
-    const percentageEl = document.getElementById('progress-percentage');
-    const detailsEl = document.getElementById('progress-details');
-
-    if (fill) fill.style.width = percentage + '%';
-    if (statusEl) statusEl.textContent = status;
-    if (percentageEl) percentageEl.textContent = Math.round(percentage) + '%';
-    if (detailsEl) detailsEl.textContent = details || '';
-}
-
-function toggleFormState(enabled) {
-    const form = document.getElementById('upload-hls-form');
-    if (!form) return;
-
-    const inputs = form.querySelectorAll('input, select, textarea, button[type="submit"]');
-    inputs.forEach(input => {
-        input.disabled = !enabled;
-    });
-}
-
-function cancelUpload() {
-    if (currentUploadTask) {
-        currentUploadTask.cancel();
-        currentUploadTask = null;
+    } catch (error) {
+        hideLoading();
+        console.error('❌ Error during upload flow:', error);
+        window.uiModule.showToast('Erro no upload: ' + error.message, 'error');
     }
+}
 
-    hideProgress();
-    toggleFormState(true);
-    window.uiModule.showToast('Upload cancelado', 'info');
+
+// Upload a File object to Firebase Storage and return downloadURL
+async function uploadFileToStorage(file, path) {
+    try {
+        const ref = firebase.storage().ref().child(path);
+        const snapshot = await ref.put(file);
+        const url = await snapshot.ref.getDownloadURL();
+        return url;
+    } catch (error) {
+        console.error('❌ Error uploading file to storage:', error);
+        throw error;
+    }
+}
+
+// Get video duration (seconds) from a File using a temporary video element
+function getVideoDurationFromFile(file) {
+    return new Promise((resolve, reject) => {
+        try {
+            const url = URL.createObjectURL(file);
+            const video = document.createElement('video');
+            video.preload = 'metadata';
+            video.src = url;
+            // Some browsers require adding to DOM; try without first
+            video.addEventListener('loadedmetadata', function () {
+                const duration = video.duration || 0;
+                URL.revokeObjectURL(url);
+                resolve(Math.floor(duration));
+            });
+            video.addEventListener('error', function (e) {
+                URL.revokeObjectURL(url);
+                reject(new Error('Não foi possível ler metadados do vídeo'));
+            });
+        } catch (err) {
+            reject(err);
+        }
+    });
 }
 
 // ============================================
-// EXPORTS
+// SEARCH
 // ============================================
 
-window.adminModule = {
-    loadAdminVideos,
-    handleAddVideoForm,
-    editVideo,
-    handleEditVideoForm,
-    confirmDeleteVideo,
-    deleteVideoAdmin,
-    loadUsers,
-    toggleUserRole,
-    confirmDeleteUser,
-    deleteUserAdmin,
-    loadCommentsForModeration,
-    approveComment: approveCommentAdmin,
-    confirmDeleteComment,
-    deleteCommentAdmin,
-    loadAnalytics,
-    // HLS Upload
-    handleFileSelect,
-    handleUploadForm,
-    cancelUpload
-};
+function setupSearch() {
+    // Movies search
+    document.getElementById('search-movies')?.addEventListener('input', async (e) => {
+        const query = e.target.value.toLowerCase();
+        const movies = await window.firestoreModule.getAllMovies();
+        const filtered = movies.filter(m => m.title.toLowerCase().includes(query));
+        displayMoviesTable(filtered);
+    });
+    
+    // Series search
+    document.getElementById('search-series')?.addEventListener('input', async (e) => {
+        const query = e.target.value.toLowerCase();
+        const filtered = allSeries.filter(s => s.title.toLowerCase().includes(query));
+        displaySeriesTable(filtered);
+    });
+    
+    // Users search
+    document.getElementById('search-users')?.addEventListener('input', async (e) => {
+        const query = e.target.value.toLowerCase();
+        loadUsers(); // Reload with filter
+    });
+    
+    // Comments filter
+    document.getElementById('filter-comments')?.addEventListener('change', () => {
+        loadComments();
+    });
+    
+    // Subscription filter
+    document.getElementById('filter-subscription')?.addEventListener('change', async (e) => {
+        const filter = e.target.value;
+        const snapshot = await firebase.firestore().collection('users').get();
+        const users = [];
+
+        for (const doc of snapshot.docs) {
+            const userData = { id: doc.id, ...doc.data() };
+            const userPlan = normalizeSubscription(userData.subscription);
+            if (!filter || userPlan === filter || (!userData.subscription && filter === 'FREE')) {
+                const profilesSnapshot = await firebase.firestore()
+                    .collection('users').doc(doc.id)
+                    .collection('profiles').get();
+                userData.profileCount = profilesSnapshot.size;
+                users.push(userData);
+            }
+        }
+
+        displayUsersTable(users);
+    });
+}
+
+// ============================================
+// FORMS SETUP
+// ============================================
+
+function setupForms() {
+    document.getElementById('movie-form')?.addEventListener('submit', handleMovieForm);
+    document.getElementById('series-form')?.addEventListener('submit', handleSeriesForm);
+    document.getElementById('episode-form')?.addEventListener('submit', handleEpisodeForm);
+    document.getElementById('tag-form')?.addEventListener('submit', handleTagForm);
+    document.getElementById('upload-form')?.addEventListener('submit', handleUploadForm);
+}
+
+// ============================================
+// GLOBAL FUNCTIONS (for onclick)
+// ============================================
+
+window.openMovieModal = openMovieModal;
+window.closeMovieModal = closeMovieModal;
+window.editMovie = editMovie;
+window.confirmDeleteMovie = confirmDeleteMovie;
+
+window.openSeriesModal = openSeriesModal;
+window.closeSeriesModal = closeSeriesModal;
+window.editSeries = editSeries;
+window.confirmDeleteSeries = confirmDeleteSeries;
+
+window.openEpisodesModal = openEpisodesModal;
+window.closeEpisodesModal = closeEpisodesModal;
+window.openEpisodeForm = openEpisodeForm;
+window.closeEpisodeForm = closeEpisodeForm;
+window.editEpisode = editEpisode;
+window.confirmDeleteEpisode = confirmDeleteEpisode;
+window.filterEpisodesBySeason = filterEpisodesBySeason;
+
+window.openTagModal = openTagModal;
+window.closeTagModal = closeTagModal;
+window.editTag = editTag;
+window.confirmDeleteTag = confirmDeleteTag;
+window.toggleTagSelection = toggleTagSelection;
+window.navigateToTags = navigateToTags;
+
+window.changeUserSubscription = changeUserSubscription;
+window.confirmDeleteUser = confirmDeleteUser;
+
+window.approveComment = approveComment;
+window.confirmDeleteComment = confirmDeleteComment;
+
+window.toggleEpisodeFields = toggleEpisodeFields;
