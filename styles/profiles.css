@@ -1,0 +1,491 @@
+/* ============================================
+   CRUCIFLIX - Profile Selection Styles
+   Netflix-style profile selection
+   ============================================ */
+
+/* ============================================
+   PROFILE SELECT BODY
+   ============================================ */
+.profile-select-body {
+    background: linear-gradient(135deg, #0a0a0a 0%, #1a0a0a 50%, #0a0a0a 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ============================================
+   PROFILE HEADER
+   ============================================ */
+.profile-header {
+    padding: var(--spacing-xl) var(--spacing-2xl);
+    background: transparent;
+}
+
+.profile-header .logo {
+    font-size: var(--font-size-3xl);
+}
+
+/* ============================================
+   PROFILE SELECT CONTAINER
+   ============================================ */
+.profile-select-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-2xl);
+    animation: fadeIn 0.5s ease;
+}
+
+.profile-select-container.hidden {
+    display: none;
+}
+
+.profile-title {
+    font-size: clamp(1.5rem, 4vw, 3rem);
+    font-weight: 400;
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-3xl);
+    text-align: center;
+}
+
+/* ============================================
+   PROFILES GRID
+   ============================================ */
+.profiles-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xl);
+    justify-content: center;
+    max-width: 900px;
+    margin-bottom: var(--spacing-3xl);
+}
+
+/* ============================================
+   PROFILE CARD
+   ============================================ */
+.profile-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-md);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+}
+
+.profile-card:hover .profile-avatar {
+    border-color: var(--color-text-primary);
+    transform: scale(1.05);
+}
+
+.profile-card:hover .profile-name {
+    color: var(--color-text-primary);
+}
+
+.profile-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 3px solid transparent;
+    transition: all var(--transition-normal);
+    position: relative;
+    background: var(--color-bg-card);
+}
+
+.profile-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.profile-avatar .edit-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+}
+
+.profile-card:hover .edit-overlay {
+    opacity: 1;
+}
+
+.add-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-bg-light);
+    border: 3px solid var(--color-text-muted);
+}
+
+.add-avatar span {
+    font-size: 4rem;
+    color: var(--color-text-muted);
+    font-weight: 300;
+    line-height: 1;
+}
+
+.profile-name {
+    font-size: var(--font-size-md);
+    color: var(--color-text-muted);
+    transition: color var(--transition-fast);
+    text-align: center;
+}
+
+/* Kids badge */
+.kids-badge {
+    background: var(--color-warning);
+    color: #000;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.kids-profile .profile-avatar {
+    border-color: var(--color-warning);
+}
+
+/* Manage profiles button */
+.manage-profiles-btn {
+    color: var(--color-text-muted);
+    border-color: var(--color-text-muted);
+    font-size: var(--font-size-md);
+    padding: var(--spacing-sm) var(--spacing-xl);
+}
+
+.manage-profiles-btn:hover {
+    color: var(--color-text-primary);
+    border-color: var(--color-text-primary);
+}
+
+/* ============================================
+   PROFILE MODAL
+   ============================================ */
+.profile-modal-content {
+    max-width: 500px;
+    width: 100%;
+    padding: var(--spacing-2xl);
+}
+
+.profile-modal-content h2 {
+    text-align: center;
+    margin-bottom: var(--spacing-xl);
+    color: var(--color-text-primary);
+}
+
+/* Avatar section */
+.avatar-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-xl);
+}
+
+.current-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 3px solid var(--color-primary);
+}
+
+.current-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Avatar gallery */
+.avatar-gallery {
+    background: var(--color-bg-light);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+    animation: slideDown 0.3s ease;
+}
+
+.avatar-gallery.hidden {
+    display: none;
+}
+
+.avatar-gallery h3 {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    margin-bottom: var(--spacing-md);
+    text-align: center;
+}
+
+.avatars-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    gap: var(--spacing-sm);
+}
+
+.avatar-item {
+    width: 60px;
+    height: 60px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all var(--transition-fast);
+}
+
+.avatar-item:hover {
+    border-color: var(--color-text-muted);
+    transform: scale(1.1);
+}
+
+.avatar-item.selected {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 10px rgba(139, 0, 0, 0.5);
+}
+
+.avatar-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Kids toggle */
+.kids-toggle-group {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--color-bg-light);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.toggle-switch {
+    position: relative;
+    width: 50px;
+    height: 26px;
+    flex-shrink: 0;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background: var(--color-bg-dark);
+    border-radius: 26px;
+    transition: all var(--transition-normal);
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 3px;
+    background: white;
+    border-radius: 50%;
+    transition: all var(--transition-normal);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background: var(--color-warning);
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+    transform: translateX(24px);
+}
+
+.kids-label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.kids-icon {
+    font-size: 1.5rem;
+}
+
+.kids-label strong {
+    display: block;
+    color: var(--color-text-primary);
+}
+
+.kids-label small {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+}
+
+/* PIN input */
+.pin-group {
+    margin-bottom: var(--spacing-lg);
+}
+
+.pin-input {
+    letter-spacing: 0.5em;
+    text-align: center;
+    font-size: var(--font-size-xl);
+}
+
+/* Form actions */
+.profile-form-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: flex-end;
+    margin-top: var(--spacing-xl);
+}
+
+.delete-profile-btn {
+    width: 100%;
+    margin-top: var(--spacing-xl);
+    background: transparent;
+    border: 1px solid var(--color-error);
+    color: var(--color-error);
+}
+
+.delete-profile-btn:hover {
+    background: var(--color-error);
+    color: white;
+}
+
+/* ============================================
+   PIN MODAL
+   ============================================ */
+.pin-modal-content {
+    max-width: 350px;
+    text-align: center;
+    padding: var(--spacing-2xl);
+}
+
+.pin-modal-content h2 {
+    margin-bottom: var(--spacing-sm);
+}
+
+.pin-modal-text {
+    color: var(--color-text-muted);
+    margin-bottom: var(--spacing-xl);
+}
+
+.pin-input-group {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: center;
+    margin-bottom: var(--spacing-lg);
+}
+
+.pin-digit {
+    width: 50px;
+    height: 60px;
+    text-align: center;
+    font-size: var(--font-size-2xl);
+    background: var(--color-bg-light);
+    border: 2px solid var(--color-bg-dark);
+    border-radius: var(--radius-md);
+    color: var(--color-text-primary);
+    transition: all var(--transition-fast);
+}
+
+.pin-digit:focus {
+    border-color: var(--color-primary);
+    outline: none;
+}
+
+.pin-digit.error {
+    border-color: var(--color-error);
+    animation: shake 0.3s ease;
+}
+
+.pin-error {
+    color: var(--color-error);
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--spacing-lg);
+}
+
+.pin-error.hidden {
+    display: none;
+}
+
+.pin-modal-actions {
+    margin-top: var(--spacing-lg);
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 768px) {
+    .profiles-grid {
+        gap: var(--spacing-lg);
+    }
+
+    .profile-avatar {
+        width: 100px;
+        height: 100px;
+    }
+
+    .add-avatar span {
+        font-size: 3rem;
+    }
+
+    .pin-digit {
+        width: 45px;
+        height: 55px;
+    }
+}
+
+@media (max-width: 480px) {
+    .profile-avatar {
+        width: 80px;
+        height: 80px;
+    }
+
+    .profile-name {
+        font-size: var(--font-size-sm);
+    }
+
+    .profile-modal-content {
+        padding: var(--spacing-lg);
+    }
+}
