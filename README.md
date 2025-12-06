@@ -10,6 +10,7 @@ Bem-vindo ao **Cruciflix**, uma plataforma de streaming com conteúdo católico 
 1. Na página inicial, clique em **"Cadastrar"**
 2. Preencha nome, email e senha
 3. Clique em **"Cadastrar"**
+4. Verifique seu email
 
 ### Fazer Login
 1. Digite seu email e senha
@@ -39,7 +40,6 @@ Bem-vindo ao **Cruciflix**, uma plataforma de streaming com conteúdo católico 
 ### Comentários
 - Role até a seção de comentários abaixo do vídeo
 - Digite e envie seu comentário
-- ⚠️ Comentários passam por moderação antes de aparecer
 
 ### Perfil
 - Acesse seu perfil pelo menu do usuário
@@ -53,16 +53,6 @@ Bem-vindo ao **Cruciflix**, uma plataforma de streaming com conteúdo católico 
 - ✅ Chrome, Firefox, Safari, Edge
 - ✅ Desktop e Mobile
 - ✅ iOS e Android
-
----
-
-## 🆘 Problemas?
-
-| Problema | Solução |
-|----------|---------|
-| Vídeo não carrega | Atualize a página (F5) |
-| Não consigo logar | Use "Esqueceu a senha?" |
-| Comentário não aparece | Aguarde aprovação do admin |
 
 ---
 
