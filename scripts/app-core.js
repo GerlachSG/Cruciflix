@@ -70,31 +70,10 @@ async function registerUser(email, password, displayName) {
 
         await user.updateProfile({ displayName: displayName });
 
-        // Criar documento do usuário
-        await firebaseDB.collection('users').doc(user.uid).set({
-            uid: user.uid,
-            email: email,
-            displayName: displayName,
-            role: 'user',
-            subscription: {
-                plan: 'free',
-                startDate: firebase.firestore.FieldValue.serverTimestamp(),
-                endDate: null
-            },
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-
-        // Criar perfil padrão automaticamente
-        const defaultProfile = {
-            name: displayName,
-            avatar: AVATARS[0].url,
-            isKids: false,
-            pin: '',
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
-
-        await firebaseDB.collection('users').doc(user.uid)
-            .collection('profiles').add(defaultProfile);
+        // IMPORTANT: Do not create Firestore user document or default profiles here.
+        // Creation of the Firestore user record must happen only after the user
+        // verifies their email. The verification page will call createUserRecordIfMissing
+        // once `user.emailVerified === true`.
 
         console.log('✅ User registered successfully:', user.uid);
         return { success: true, user: user };
@@ -354,6 +333,49 @@ async function verifyKidsPin(profileId, pin) {
     }
 }
 
+// Create Firestore user record and a default profile if missing.
+async function createUserRecordIfMissing(user, displayName) {
+    try {
+        if (!user) return { success: false, error: 'Usuário ausente' };
+
+        const userRef = firebaseDB.collection('users').doc(user.uid);
+        const userDoc = await userRef.get();
+        if (userDoc.exists) {
+            return { success: true, created: false };
+        }
+
+        const now = firebase.firestore.FieldValue.serverTimestamp();
+        await userRef.set({
+            uid: user.uid,
+            email: user.email,
+            displayName: displayName || user.displayName || '',
+            role: 'user',
+            subscription: {
+                plan: 'free',
+                startDate: now,
+                endDate: null
+            },
+            createdAt: now
+        });
+
+        // Create a default profile for the user
+        const defaultProfile = {
+            name: displayName || user.displayName || 'Perfil',
+            avatar: AVATARS[0].url,
+            isKids: false,
+            pin: '',
+            createdAt: now
+        };
+
+        await userRef.collection('profiles').add(defaultProfile);
+
+        return { success: true, created: true };
+    } catch (error) {
+        console.error('❌ Error creating user record:', error);
+        return { success: false, error: error.message };
+    }
+}
+
 // Get available avatars
 function getAvatars(isKids = false) {
     if (isKids) {
@@ -432,13 +454,13 @@ async function updateSubscription(planId) {
         const plan = SUBSCRIPTION_PLANS.find(p => p.id === planId);
         if (!plan) throw new Error('Plano inválido');
 
-        await firebaseDB.collection('users').doc(user.uid).update({
+        await firebaseDB.collection('users').doc(user.uid).set({
             subscription: {
                 plan: planId,
                 startDate: firebase.firestore.FieldValue.serverTimestamp(),
                 endDate: null // Em produção, calcular data de expiração
             }
-        });
+        }, { merge: true });
 
         console.log('✅ Subscription updated to:', planId);
         return { success: true };
@@ -471,6 +493,7 @@ window.authModule = {
     verifyKidsPin,
     getAvatars,
     AVATARS,
+    createUserRecordIfMissing,
     // Subscription
     getSubscriptionPlans,
     getUserSubscription,

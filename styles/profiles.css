@@ -360,6 +360,23 @@
     color: white;
 }
 
+/* Disabled state for delete button */
+.delete-profile-btn:disabled,
+.delete-profile-btn[disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: transparent;
+    border-color: rgba(255,0,0,0.35);
+    color: rgba(255,0,0,0.35);
+}
+
+/* Prevent hover visual when disabled */
+.delete-profile-btn:disabled:hover,
+.delete-profile-btn[disabled]:hover {
+    background: transparent;
+    color: rgba(255,0,0,0.35);
+}
+
 /* ============================================
    PIN MODAL
    ============================================ */

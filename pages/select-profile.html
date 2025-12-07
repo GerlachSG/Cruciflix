@@ -12,6 +12,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
 
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
     <!-- Stylesheets -->
     <link rel="stylesheet" href="../styles/main.css">
     <link rel="stylesheet" href="../styles/profiles.css">
@@ -21,7 +24,10 @@
 
     <!-- Header simplificado -->
     <header class="profile-header">
-        <div class="logo">Cruci<span class="accent">flix</span></div>
+        <a href="dashboard.html" class="logo">
+            <i class="fas fa-cross"></i>
+            CruciFlix
+        </a>
     </header>
 
     <!-- Tela principal de seleção -->
@@ -96,11 +102,21 @@
                     </div>
                 </div>
 
-                <!-- PIN para Kids (aparece apenas se não for kids) -->
+                <!-- PIN setter (usado para criar KIDS ou alterar PIN). -->
                 <div class="form-group pin-group" id="pin-group" style="display: none;">
                     <label class="form-label">PIN de Segurança (4 dígitos)</label>
                     <input type="password" id="profile-pin" class="form-input pin-input" placeholder="••••" maxlength="4" pattern="[0-9]{4}">
-                    <small class="form-hint">Necessário para acessar este perfil adulto a partir de um perfil kids</small>
+                    <small class="form-hint">Obrigatório para perfis KIDS; opcional para outros</small>
+                </div>
+
+                <!-- Auth PIN: quando editando um perfil que já possui PIN é necessário confirmá-lo para salvar alterações -->
+                <div class="form-group auth-pin-group hidden" id="auth-pin-group" style="display: none;">
+                    <label class="form-label">Digite o PIN atual para confirmar</label>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <input type="password" id="profile-auth-pin" class="form-input pin-input" placeholder="••••" maxlength="4" pattern="[0-9]{4}" style="flex:1;">
+                        <button type="button" class="btn btn-ghost" id="verify-auth-pin-btn" onclick="verifyAuthPinButton()">Verificar</button>
+                    </div>
+                    <small id="auth-pin-status" class="form-hint" style="display:none;color:var(--primary);">PIN verificado</small>
                 </div>
 
                 <div class="profile-form-actions">
@@ -154,6 +170,13 @@
         let isManaging = false;
         let selectedAvatar = null;
         let pendingProfile = null;
+        // pendingAction: null | 'enterTargetPin' | 'exitKids'
+        let pendingAction = null;
+        // Editing state
+        let editingProfileHasPin = false;
+        let editingProfileId = null;
+        // Whether the current edit session authenticated the existing PIN
+        let editingAuthVerified = false;
 
         // Check auth and load profiles
         window.authModule.onAuthStateChanged(async (authState) => {
@@ -168,7 +191,16 @@
                 window.location.href = 'verify-email.html';
                 return;
             }
-            
+
+            // Ensure Firestore user record exists if the email was already verified
+            if (user && user.emailVerified) {
+                try {
+                    await window.authModule.createUserRecordIfMissing(user, user.displayName || '');
+                } catch (e) {
+                    console.error('Error ensuring user record on select-profile:', e);
+                }
+            }
+
             await loadProfiles();
         });
 
@@ -249,22 +281,33 @@
 
         // Select profile
         async function selectProfile(profile) {
-            // Se for perfil kids, vai direto
+            // If selecting a kids profile, enter kids area directly
             if (profile.isKids) {
                 window.authModule.setCurrentProfile(profile);
                 window.location.href = 'catalogo.html';
                 return;
             }
 
-            // Se o perfil atual é kids e está tentando acessar perfil adulto com PIN
             const currentProfile = window.authModule.getCurrentProfile();
-            if (profile.pin && profile.pin.length === 4) {
+
+            // If current profile is KIDS and user is trying to switch to an adult profile,
+            // require the current (kids) profile PIN to allow leaving it.
+            if (currentProfile && currentProfile.isKids && !profile.isKids && currentProfile.id !== profile.id) {
                 pendingProfile = profile;
+                pendingAction = 'exitKids';
                 openPinModal();
                 return;
             }
 
-            // Acesso direto
+            // If target profile is protected by PIN, require entering its PIN
+            if (profile.pin && profile.pin.length === 4) {
+                pendingProfile = profile;
+                pendingAction = 'enterTargetPin';
+                openPinModal();
+                return;
+            }
+
+            // Direct access
             window.authModule.setCurrentProfile(profile);
             window.location.href = 'dashboard.html';
         }
@@ -294,20 +337,58 @@
             form.reset();
             document.getElementById('edit-profile-id').value = '';
 
+            // reset editing state
+            editingProfileHasPin = false;
+            editingProfileId = null;
+            editingAuthVerified = false;
+            document.getElementById('profile-auth-pin').value = '';
+            document.getElementById('profile-pin').value = '';
+            document.getElementById('auth-pin-group').style.display = 'none';
+            document.getElementById('auth-pin-status').style.display = 'none';
+            document.getElementById('verify-auth-pin-btn').disabled = false;
+            // hide and disable delete button by default
+            deleteBtn.classList.add('hidden');
+            deleteBtn.disabled = false;
+
             if (profile) {
                 // Edit mode
                 title.textContent = 'Editar Perfil';
                 document.getElementById('edit-profile-id').value = profile.id;
                 document.getElementById('profile-name').value = profile.name;
                 document.getElementById('is-kids-profile').checked = profile.isKids;
-                document.getElementById('profile-pin').value = profile.pin || '';
+                // Do not prefill PIN for security. If profile already has PIN, require auth to save.
+                editingProfileId = profile.id;
+                editingProfileHasPin = !!(profile.pin && profile.pin.length === 4);
+                if (editingProfileHasPin) {
+                    document.getElementById('auth-pin-group').style.display = 'block';
+                    // show delete and allow click — deletion will require PIN via modal
+                    deleteBtn.classList.remove('hidden');
+                    deleteBtn.disabled = false;
+                    deleteBtn.title = 'Este perfil está protegido por PIN. Será necessário inserir o PIN para excluir.';
+                } else {
+                    // profile has no PIN, allow immediate deletion
+                    deleteBtn.classList.remove('hidden');
+                    deleteBtn.disabled = false;
+                    deleteBtn.title = '';
+                }
+
+                // If editing the currently active profile, do not allow deletion — disable button and show reason
+                try {
+                    const current = window.authModule.getCurrentProfile();
+                    if (current && profile && current.id === profile.id) {
+                        deleteBtn.disabled = true;
+                        deleteBtn.title = 'Não é possível excluir o perfil atualmente ativo.';
+                    }
+                } catch (e) {
+                    // ignore
+                }
                 selectedAvatar = profile.avatar;
-                deleteBtn.classList.remove('hidden');
             } else {
                 // Create mode
                 title.textContent = 'Adicionar Perfil';
                 selectedAvatar = avatars[0].url;
                 deleteBtn.classList.add('hidden');
+                deleteBtn.disabled = false;
             }
 
             // Update avatar preview
@@ -367,10 +448,14 @@
         function toggleKidsOptions() {
             const isKids = document.getElementById('is-kids-profile').checked;
             const pinGroup = document.getElementById('pin-group');
-            
-            // Mostrar PIN apenas para perfis NÃO kids
-            pinGroup.style.display = isKids ? 'none' : 'block';
-            
+            const authGroup = document.getElementById('auth-pin-group');
+
+            // Show PIN setter when creating/editing a KIDS profile (KIDS require PIN)
+            pinGroup.style.display = isKids ? 'block' : 'none';
+
+            // Show auth PIN group if this profile being edited already has a PIN
+            authGroup.style.display = editingProfileHasPin ? 'block' : 'none';
+
             // Recarregar galeria de avatares
             if (!document.getElementById('avatar-gallery').classList.contains('hidden')) {
                 loadAvatarGallery();
@@ -386,17 +471,58 @@
             const isKids = document.getElementById('is-kids-profile').checked;
             const pin = document.getElementById('profile-pin').value;
 
+            const authPin = document.getElementById('profile-auth-pin').value;
+
             if (!name) {
                 window.uiModule.showToast('Digite um nome para o perfil', 'error');
                 return;
             }
 
+            // If editing a profile that already has a PIN, require prior successful verification
+            if (profileId && editingProfileHasPin) {
+                // If user hasn't clicked verify button, still allow inline check here
+                if (!editingAuthVerified) {
+                    if (!authPin || authPin.length !== 4) {
+                        window.uiModule.showToast('Digite o PIN atual para confirmar as alterações', 'error');
+                        return;
+                    }
+
+                    const ok = await window.authModule.verifyKidsPin(profileId, authPin);
+                    if (!ok) {
+                        window.uiModule.showToast('PIN inválido. Não foi possível salvar.', 'error');
+                        return;
+                    }
+                    // mark verified to allow PIN change
+                    editingAuthVerified = true;
+                }
+            }
+
+            // If creating a KIDS profile, require a 4-digit PIN
+            if (!profileId && isKids) {
+                if (!pin || pin.length !== 4) {
+                    window.uiModule.showToast('Perfis KIDS precisam de um PIN de 4 dígitos', 'error');
+                    return;
+                }
+            }
+
             const profileData = {
                 name: name,
                 avatar: selectedAvatar,
-                isKids: isKids,
-                pin: isKids ? '' : pin
+                isKids: isKids
             };
+
+            // Include PIN only when creating a KIDS profile or when user provided a new PIN.
+            // If editing an existing profile that had a PIN, only allow changing the PIN after verification.
+            if (!profileId && isKids) {
+                profileData.pin = pin;
+            } else if (pin && pin.length === 4) {
+                if (profileId && editingProfileHasPin && !editingAuthVerified) {
+                    window.uiModule.showToast('Verifique o PIN atual antes de alterá-lo', 'error');
+                    window.uiModule.hideLoading();
+                    return;
+                }
+                profileData.pin = pin;
+            }
 
             window.uiModule.showLoading();
 
@@ -421,11 +547,26 @@
         // Confirm delete profile
         async function confirmDeleteProfile() {
             const profileId = document.getElementById('edit-profile-id').value;
-            
             if (!confirm('Tem certeza que deseja excluir este perfil? Esta ação não pode ser desfeita.')) {
                 return;
             }
 
+            // Do not allow deleting the currently active profile
+            const current = window.authModule.getCurrentProfile();
+            if (current && current.id === profileId) {
+                window.uiModule.showToast('Não é possível excluir o perfil atualmente ativo.', 'error');
+                return;
+            }
+
+            // If profile has PIN, open PIN modal to verify before deleting
+            if (editingProfileHasPin) {
+                pendingProfile = { id: profileId };
+                pendingAction = 'deleteProfile';
+                openPinModal();
+                return;
+            }
+
+            // No PIN on profile: delete immediately
             window.uiModule.showLoading();
             const result = await window.authModule.deleteProfile(profileId);
             window.uiModule.hideLoading();
@@ -457,6 +598,7 @@
         function closePinModal() {
             document.getElementById('pin-modal').style.display = 'none';
             pendingProfile = null;
+            pendingAction = null;
         }
 
         // PIN input handling
@@ -486,27 +628,93 @@
 
         async function verifyEnteredPin() {
             const digits = Array.from(document.querySelectorAll('.pin-digit')).map(i => i.value).join('');
-            
             if (digits.length !== 4) return;
 
-            const isValid = await window.authModule.verifyKidsPin(pendingProfile.id, digits);
-            
-            if (isValid) {
-                window.authModule.setCurrentProfile(pendingProfile);
-                window.location.href = 'dashboard.html';
-            } else {
-                document.getElementById('pin-error').classList.remove('hidden');
+            // No pendingProfile? just abort
+            if (!pendingAction) return;
+
+            if (pendingAction === 'enterTargetPin') {
+                const isValid = await window.authModule.verifyKidsPin(pendingProfile.id, digits);
+                if (isValid) {
+                    window.authModule.setCurrentProfile(pendingProfile);
+                    window.location.href = 'dashboard.html';
+                    return;
+                }
+            } else if (pendingAction === 'exitKids') {
+                const currentProfile = window.authModule.getCurrentProfile();
+                if (!currentProfile) return;
+
+                const isValid = await window.authModule.verifyKidsPin(currentProfile.id, digits);
+                if (isValid) {
+                    window.authModule.setCurrentProfile(pendingProfile);
+                    window.location.href = 'dashboard.html';
+                    return;
+                }
+            } else if (pendingAction === 'deleteProfile') {
+                // Verify PIN of the profile to delete
+                const profileId = pendingProfile && pendingProfile.id;
+                if (!profileId) return;
+
+                const ok = await window.authModule.verifyKidsPin(profileId, digits);
+                if (ok) {
+                    window.uiModule.showLoading();
+                    const result = await window.authModule.deleteProfile(profileId);
+                    window.uiModule.hideLoading();
+                    if (result.success) {
+                        window.uiModule.showToast('Perfil excluído!', 'success');
+                        closePinModal();
+                        closeProfileModal();
+                        await loadProfiles();
+                    } else {
+                        window.uiModule.showToast(result.error, 'error');
+                    }
+                    return;
+                }
+            }
+
+            // If we get here, pin was invalid
+            document.getElementById('pin-error').classList.remove('hidden');
+            document.querySelectorAll('.pin-digit').forEach(input => {
+                input.value = '';
+                input.classList.add('error');
+            });
+            document.querySelector('.pin-digit[data-index="0"]').focus();
+            setTimeout(() => {
                 document.querySelectorAll('.pin-digit').forEach(input => {
-                    input.value = '';
-                    input.classList.add('error');
+                    input.classList.remove('error');
                 });
-                document.querySelector('.pin-digit[data-index="0"]').focus();
-                
-                setTimeout(() => {
-                    document.querySelectorAll('.pin-digit').forEach(input => {
-                        input.classList.remove('error');
-                    });
-                }, 500);
+            }, 500);
+        }
+
+        // Verify auth PIN when editing: called by the verify button next to the auth PIN input
+        async function verifyAuthPinButton() {
+            const profileId = document.getElementById('edit-profile-id').value;
+            const authPin = document.getElementById('profile-auth-pin').value;
+            if (!profileId) return;
+            if (!authPin || authPin.length !== 4) {
+                window.uiModule.showToast('Digite o PIN atual (4 dígitos) para verificar', 'error');
+                return;
+            }
+
+            window.uiModule.showLoading();
+            const ok = await window.authModule.verifyKidsPin(profileId, authPin);
+            window.uiModule.hideLoading();
+
+            if (ok) {
+                editingAuthVerified = true;
+                document.getElementById('auth-pin-status').style.display = 'block';
+                document.getElementById('verify-auth-pin-btn').disabled = true;
+                window.uiModule.showToast('PIN verificado', 'success');
+                // Enable delete button now that PIN is verified
+                const deleteBtn = document.getElementById('delete-profile-btn');
+                if (deleteBtn) {
+                    deleteBtn.disabled = false;
+                    deleteBtn.title = '';
+                }
+            } else {
+                editingAuthVerified = false;
+                document.getElementById('auth-pin-status').style.display = 'none';
+                window.uiModule.showToast('PIN incorreto', 'error');
             }
         }
     </script>
