@@ -871,11 +871,11 @@
                     <i class="fas fa-caret-down"></i>
                 </button>
                 <div class="profile-menu" id="profile-menu">
-                    <a href="select-profile.html">
+                    <a href="#" onclick="handleSwitchProfile(event)">
                         <i class="fas fa-exchange-alt"></i>
                         Trocar Perfil
                     </a>
-                    <a href="#" onclick="openProfileModal()">
+                    <a href="#" onclick="handleManageProfile(event)">
                         <i class="fas fa-user-edit"></i>
                         Gerenciar Perfil
                     </a>
@@ -1017,6 +1017,163 @@
             </div>
         </div>
     </div>
+
+    <!-- Kids PIN Modal -->
+    <div class="modal" id="kids-pin-modal" style="display: none;">
+        <div class="kids-pin-modal-content">
+            <div class="kids-pin-modal-header">
+                <div class="kids-pin-icon">🔒</div>
+                <h2>Controle Parental</h2>
+            </div>
+            <p class="kids-pin-text">Digite o PIN do perfil Kids para continuar</p>
+            
+            <div class="kids-pin-input-group">
+                <input type="password" class="kids-pin-digit" maxlength="1" data-index="0" inputmode="numeric">
+                <input type="password" class="kids-pin-digit" maxlength="1" data-index="1" inputmode="numeric">
+                <input type="password" class="kids-pin-digit" maxlength="1" data-index="2" inputmode="numeric">
+                <input type="password" class="kids-pin-digit" maxlength="1" data-index="3" inputmode="numeric">
+            </div>
+            
+            <p class="kids-pin-error hidden" id="kids-pin-error">PIN incorreto. Tente novamente.</p>
+            
+            <div class="kids-pin-actions">
+                <button class="kids-pin-btn cancel" onclick="closeKidsPinModal()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* Kids PIN Modal Styles */
+        #kids-pin-modal {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            animation: kidsPinFadeIn 0.3s ease;
+        }
+        @keyframes kidsPinFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes kidsPinSlideIn {
+            from { opacity: 0; transform: scale(0.9) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .kids-pin-modal-content {
+            max-width: 400px;
+            width: 92%;
+            background: linear-gradient(145deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 16px;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255,255,255,0.1);
+            padding: 0;
+            overflow: hidden;
+            animation: kidsPinSlideIn 0.4s ease;
+        }
+        .kids-pin-modal-header {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);
+            padding: 28px 28px 24px;
+            text-align: center;
+        }
+        .kids-pin-icon {
+            width: 64px;
+            height: 64px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            font-size: 28px;
+        }
+        .kids-pin-modal-header h2 {
+            margin: 0;
+            color: #fff;
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+        .kids-pin-text {
+            color: #a0a0a0;
+            font-size: 0.95rem;
+            text-align: center;
+            padding: 24px 28px 0;
+            margin: 0;
+        }
+        .kids-pin-input-group {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            padding: 24px 28px;
+        }
+        .kids-pin-digit {
+            width: 56px;
+            height: 64px;
+            border: 2px solid rgba(255,255,255,0.15);
+            border-radius: 12px;
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            font-size: 1.8rem;
+            font-weight: 700;
+            text-align: center;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        .kids-pin-digit:focus {
+            border-color: #00a79e;
+            background: rgba(0, 167, 158, 0.1);
+            box-shadow: 0 0 20px rgba(0, 167, 158, 0.3);
+        }
+        .kids-pin-digit.error {
+            border-color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.1);
+            animation: shake 0.5s ease;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+        .kids-pin-error {
+            color: #ff6b6b;
+            font-size: 0.9rem;
+            text-align: center;
+            margin: 0;
+            padding: 0 28px 16px;
+        }
+        .kids-pin-error.hidden {
+            display: none;
+        }
+        .kids-pin-actions {
+            display: flex;
+            justify-content: center;
+            padding: 0 28px 28px;
+        }
+        .kids-pin-btn {
+            padding: 12px 32px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+        }
+        .kids-pin-btn.cancel {
+            background: rgba(255,255,255,0.08);
+            color: #aaa;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .kids-pin-btn.cancel:hover {
+            background: rgba(255,255,255,0.12);
+            color: #fff;
+        }
+    </style>
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -1368,7 +1525,7 @@
                 const required = (content.subscriptionLevel || content.subscription || 'free').toString().toLowerCase();
 
                 // Map plan ranks for comparison
-                const ranks = { free: 0, basic: 1, standard: 2, premium: 3 };
+                const ranks = { free: 0, basic: 1, premium: 2 };
 
                 // Get current user subscription (from user record)
                 const userSub = await window.authModule.getUserSubscription();
@@ -1587,6 +1744,159 @@
         function toggleProfileMenu() {
             document.getElementById('profile-menu').classList.toggle('active');
         }
+
+        // Kids PIN protection for profile actions
+        let kidsPinAction = null; // 'switchProfile' | 'manageProfile'
+
+        function handleSwitchProfile(event) {
+            event.preventDefault();
+            document.getElementById('profile-menu').classList.remove('active');
+            
+            // Check if current profile is Kids
+            const profile = window.authModule?.getCurrentProfile?.();
+            if (profile && profile.isKids) {
+                kidsPinAction = 'switchProfile';
+                openKidsPinModal();
+                return;
+            }
+            
+            // Not a kids profile, go directly
+            window.location.href = 'select-profile.html';
+        }
+
+        function handleManageProfile(event) {
+            event.preventDefault();
+            document.getElementById('profile-menu').classList.remove('active');
+            
+            // Check if current profile is Kids
+            const profile = window.authModule?.getCurrentProfile?.();
+            if (profile && profile.isKids) {
+                kidsPinAction = 'manageProfile';
+                openKidsPinModal();
+                return;
+            }
+            
+            // Not a kids profile, open modal directly
+            openProfileModal();
+        }
+
+        function openKidsPinModal() {
+            const modal = document.getElementById('kids-pin-modal');
+            modal.style.display = 'flex';
+            
+            // Clear inputs
+            document.querySelectorAll('.kids-pin-digit').forEach(input => {
+                input.value = '';
+                input.classList.remove('error');
+            });
+            document.getElementById('kids-pin-error').classList.add('hidden');
+            
+            // Focus first input
+            setTimeout(() => {
+                document.querySelector('.kids-pin-digit[data-index="0"]').focus();
+            }, 100);
+        }
+
+        function closeKidsPinModal() {
+            document.getElementById('kids-pin-modal').style.display = 'none';
+            // Don't reset kidsPinAction here - it's needed after closing
+        }
+
+        // Setup PIN input events immediately (not waiting for DOMContentLoaded)
+        function setupKidsPinInputs() {
+            document.querySelectorAll('.kids-pin-digit').forEach(input => {
+                input.addEventListener('input', function() {
+                    const index = parseInt(this.dataset.index);
+                    
+                    // Only allow numbers
+                    this.value = this.value.replace(/[^0-9]/g, '');
+                    
+                    if (this.value.length === 1) {
+                        // Move to next input
+                        if (index < 3) {
+                            document.querySelector(`.kids-pin-digit[data-index="${index + 1}"]`).focus();
+                        } else {
+                            // All digits entered, verify PIN
+                            verifyKidsPin();
+                        }
+                    }
+                });
+
+                input.addEventListener('keydown', function(e) {
+                    const index = parseInt(this.dataset.index);
+                    
+                    if (e.key === 'Backspace' && !this.value && index > 0) {
+                        document.querySelector(`.kids-pin-digit[data-index="${index - 1}"]`).focus();
+                    }
+                });
+
+                // Handle paste
+                input.addEventListener('paste', function(e) {
+                    e.preventDefault();
+                    const paste = (e.clipboardData || window.clipboardData).getData('text');
+                    const digits = paste.replace(/[^0-9]/g, '').slice(0, 4);
+                    
+                    document.querySelectorAll('.kids-pin-digit').forEach((inp, i) => {
+                        inp.value = digits[i] || '';
+                    });
+                    
+                    if (digits.length === 4) {
+                        verifyKidsPin();
+                    } else if (digits.length > 0) {
+                        document.querySelector(`.kids-pin-digit[data-index="${Math.min(digits.length, 3)}"]`).focus();
+                    }
+                });
+            });
+        }
+        
+        // Run setup immediately
+        setupKidsPinInputs();
+
+        async function verifyKidsPin() {
+            const digits = Array.from(document.querySelectorAll('.kids-pin-digit')).map(i => i.value).join('');
+            if (digits.length !== 4) return;
+
+            const profile = window.authModule?.getCurrentProfile?.();
+            if (!profile) return;
+
+            const isValid = await window.authModule.verifyKidsPin(profile.id, digits);
+            
+            if (isValid) {
+                // Save action before closing
+                const actionToExecute = kidsPinAction;
+                closeKidsPinModal();
+                kidsPinAction = null; // Reset after saving
+                
+                // Execute the action
+                if (actionToExecute === 'switchProfile') {
+                    window.location.href = 'select-profile.html';
+                } else if (actionToExecute === 'manageProfile') {
+                    openProfileModal();
+                }
+            } else {
+                // Show error
+                document.getElementById('kids-pin-error').classList.remove('hidden');
+                document.querySelectorAll('.kids-pin-digit').forEach(input => {
+                    input.value = '';
+                    input.classList.add('error');
+                });
+                document.querySelector('.kids-pin-digit[data-index="0"]').focus();
+                
+                setTimeout(() => {
+                    document.querySelectorAll('.kids-pin-digit').forEach(input => {
+                        input.classList.remove('error');
+                    });
+                }, 500);
+            }
+        }
+
+        // Close Kids PIN modal on overlay click
+        document.addEventListener('click', (e) => {
+            const modal = document.getElementById('kids-pin-modal');
+            if (e.target === modal) {
+                closeKidsPinModal();
+            }
+        });
 
         // Close dropdown when clicking outside
         document.addEventListener('click', function(e) {

@@ -768,20 +768,13 @@
                             </div>
                             <small>Todo conteúdo • 2 perfis • Qualidade HD</small>
                         </div>
-                        <div class="plan-option selected" onclick="selectPlan('standard')" data-plan="standard">
-                            <div class="plan-header-opt">
-                                <strong>Padrão</strong>
-                                <span class="plan-price-opt">R$ 29,90/mês</span>
-                            </div>
-                            <small>Todo conteúdo • 4 perfis • Full HD • Downloads</small>
-                            <span class="popular-badge">Mais Popular</span>
-                        </div>
-                        <div class="plan-option" onclick="selectPlan('premium')" data-plan="premium">
+                        <div class="plan-option selected" onclick="selectPlan('premium')" data-plan="premium">
                             <div class="plan-header-opt">
                                 <strong>Premium</strong>
-                                <span class="plan-price-opt">R$ 49,90/mês</span>
+                                <span class="plan-price-opt">R$ 39,90/mês</span>
                             </div>
                             <small>Todo conteúdo • 5 perfis • 4K • Downloads • Exclusivos</small>
+                            <span class="popular-badge">Mais Popular</span>
                         </div>
                     </div>
                     
@@ -803,10 +796,10 @@
                     </a>
                     <h1>Criar Conta</h1>
                     <p class="form-subtitle">
-                        Plano: <strong id="selected-plan-display">Padrão</strong>
+                        Plano: <strong id="selected-plan-display">Premium</strong>
                         <a href="#" onclick="backToPlanSelection(event)" class="plan-change-link">Alterar</a>
                     </p>
-                    <input type="hidden" id="selected-plan" value="standard">
+                    <input type="hidden" id="selected-plan" value="premium">
                     
                     <form onsubmit="handleRegister(event)">
                         <div class="form-group">
@@ -856,12 +849,11 @@
 
     <script>
         let isSubmitting = false;
-        let selectedPlanId = 'standard';
+        let selectedPlanId = 'premium';
         
         const planNames = {
             'free': 'Gratuito',
             'basic': 'Básico',
-            'standard': 'Padrão',
             'premium': 'Premium'
         };
         

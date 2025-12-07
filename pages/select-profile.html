@@ -314,6 +314,14 @@
 
         // Toggle manage mode
         document.getElementById('manage-profiles-btn').onclick = () => {
+            // If current profile is KIDS, require PIN to access manage profiles
+            const currentProfile = window.authModule.getCurrentProfile();
+            if (currentProfile && currentProfile.isKids) {
+                pendingAction = 'manageProfiles';
+                openPinModal();
+                return;
+            }
+            
             document.getElementById('profile-select-screen').classList.add('hidden');
             document.getElementById('manage-profiles-screen').classList.remove('hidden');
             isManaging = true;
@@ -630,8 +638,10 @@
             const digits = Array.from(document.querySelectorAll('.pin-digit')).map(i => i.value).join('');
             if (digits.length !== 4) return;
 
-            // No pendingProfile? just abort
+            // No pendingAction? just abort
             if (!pendingAction) return;
+
+            const currentProfile = window.authModule.getCurrentProfile();
 
             if (pendingAction === 'enterTargetPin') {
                 const isValid = await window.authModule.verifyKidsPin(pendingProfile.id, digits);
@@ -641,13 +651,24 @@
                     return;
                 }
             } else if (pendingAction === 'exitKids') {
-                const currentProfile = window.authModule.getCurrentProfile();
                 if (!currentProfile) return;
 
                 const isValid = await window.authModule.verifyKidsPin(currentProfile.id, digits);
                 if (isValid) {
                     window.authModule.setCurrentProfile(pendingProfile);
                     window.location.href = 'dashboard.html';
+                    return;
+                }
+            } else if (pendingAction === 'manageProfiles') {
+                // Verify current kids profile PIN to access manage profiles
+                if (!currentProfile) return;
+
+                const isValid = await window.authModule.verifyKidsPin(currentProfile.id, digits);
+                if (isValid) {
+                    closePinModal();
+                    document.getElementById('profile-select-screen').classList.add('hidden');
+                    document.getElementById('manage-profiles-screen').classList.remove('hidden');
+                    isManaging = true;
                     return;
                 }
             } else if (pendingAction === 'deleteProfile') {

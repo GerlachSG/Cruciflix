@@ -406,17 +406,9 @@ const SUBSCRIPTION_PLANS = [
         quality: 'HD'
     },
     {
-        id: 'standard',
-        name: 'Padrão',
-        price: 29.90,
-        features: ['Catálogo completo', '4 perfis', 'Qualidade Full HD', 'Sem anúncios', 'Download offline'],
-        maxProfiles: 4,
-        quality: 'FHD'
-    },
-    {
         id: 'premium',
         name: 'Premium',
-        price: 49.90,
+        price: 39.90,
         features: ['Catálogo completo', '5 perfis', 'Qualidade 4K', 'Sem anúncios', 'Download offline', 'Conteúdo exclusivo'],
         maxProfiles: 5,
         quality: '4K'
@@ -658,266 +650,356 @@ function hideLoading() {
 
 // --- UPGRADE PROMPT ---
 function showUpgradeModal(content, requiredPlan, currentPlan) {
-    let modal = document.getElementById('upgrade-modal');
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'upgrade-modal';
-        modal.className = 'modal';
-        
-        // Inject styles
-        if (!document.getElementById('upgrade-modal-styles')) {
-            const styleEl = document.createElement('style');
-            styleEl.id = 'upgrade-modal-styles';
-            styleEl.textContent = `
-                #upgrade-modal {
-                    position: fixed;
-                    left: 0;
-                    top: 0;
-                    width: 100%;
-                    height: 100%;
-                    background: rgba(0, 0, 0, 0.85);
-                    backdrop-filter: blur(8px);
-                    -webkit-backdrop-filter: blur(8px);
-                    display: none;
-                    align-items: center;
-                    justify-content: center;
-                    z-index: 99999;
-                    animation: upgradeModalFadeIn 0.3s ease;
-                }
-                @keyframes upgradeModalFadeIn {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
-                }
-                @keyframes upgradeModalSlideIn {
-                    from { opacity: 0; transform: scale(0.9) translateY(20px); }
-                    to { opacity: 1; transform: scale(1) translateY(0); }
-                }
-                .upgrade-modal-content {
-                    max-width: 480px;
-                    width: 92%;
-                    background: linear-gradient(145deg, #1a1a2e 0%, #16213e 100%);
-                    border-radius: 16px;
-                    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255,255,255,0.1);
-                    overflow: hidden;
-                    animation: upgradeModalSlideIn 0.4s ease;
-                }
-                .upgrade-modal-header {
-                    background: linear-gradient(135deg, #00a79e 0%, #007d77 100%);
-                    padding: 28px 28px 24px;
-                    text-align: center;
-                    position: relative;
-                }
-                .upgrade-modal-header::after {
-                    content: '';
-                    position: absolute;
-                    bottom: -20px;
-                    left: 50%;
-                    transform: translateX(-50%);
-                    width: 0;
-                    height: 0;
-                    border-left: 20px solid transparent;
-                    border-right: 20px solid transparent;
-                    border-top: 20px solid #007d77;
-                }
-                .upgrade-modal-icon {
-                    width: 64px;
-                    height: 64px;
-                    background: rgba(255,255,255,0.2);
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    margin: 0 auto 16px;
-                    font-size: 28px;
-                }
-                .upgrade-modal-header h2 {
-                    margin: 0;
-                    color: #fff;
-                    font-size: 1.5rem;
-                    font-weight: 700;
-                    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-                }
-                .upgrade-modal-body {
-                    padding: 36px 28px 28px;
-                    text-align: center;
-                }
-                .upgrade-modal-thumbnail {
-                    width: 120px;
-                    height: 68px;
-                    object-fit: cover;
-                    border-radius: 8px;
-                    margin-bottom: 20px;
-                    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-                    border: 2px solid rgba(255,255,255,0.1);
-                }
-                .upgrade-modal-title {
-                    color: #fff;
-                    font-size: 1.1rem;
-                    font-weight: 600;
-                    margin-bottom: 12px;
-                }
-                .upgrade-modal-msg {
-                    color: #a0a0a0;
-                    font-size: 0.95rem;
-                    line-height: 1.6;
-                    margin-bottom: 24px;
-                }
-                .upgrade-modal-plans {
-                    display: flex;
-                    justify-content: center;
-                    gap: 12px;
-                    margin-bottom: 24px;
-                }
-                .upgrade-plan-badge {
-                    padding: 6px 16px;
-                    border-radius: 20px;
-                    font-size: 0.8rem;
-                    font-weight: 600;
-                    text-transform: uppercase;
-                    letter-spacing: 0.5px;
-                }
-                .upgrade-plan-badge.current {
-                    background: rgba(255,255,255,0.1);
-                    color: #888;
-                    border: 1px solid rgba(255,255,255,0.1);
-                }
-                .upgrade-plan-badge.required {
-                    background: linear-gradient(135deg, #00a79e 0%, #00d9ff 100%);
-                    color: #fff;
-                    box-shadow: 0 4px 15px rgba(0, 167, 158, 0.4);
-                }
-                .upgrade-plan-arrow {
-                    color: #00a79e;
-                    font-size: 1.2rem;
-                    display: flex;
-                    align-items: center;
-                }
-                .upgrade-modal-buttons {
-                    display: flex;
-                    gap: 12px;
-                    justify-content: center;
-                }
-                .upgrade-modal-btn {
-                    padding: 14px 32px;
-                    border-radius: 8px;
-                    font-size: 0.95rem;
-                    font-weight: 600;
-                    cursor: pointer;
-                    transition: all 0.3s ease;
-                    border: none;
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                }
-                .upgrade-modal-btn.cancel {
-                    background: rgba(255,255,255,0.08);
-                    color: #aaa;
-                    border: 1px solid rgba(255,255,255,0.1);
-                }
-                .upgrade-modal-btn.cancel:hover {
-                    background: rgba(255,255,255,0.12);
-                    color: #fff;
-                }
-                .upgrade-modal-btn.primary {
-                    background: linear-gradient(135deg, #00a79e 0%, #00d9ff 100%);
-                    color: #fff;
-                    box-shadow: 0 4px 20px rgba(0, 167, 158, 0.4);
-                }
-                .upgrade-modal-btn.primary:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 8px 30px rgba(0, 167, 158, 0.5);
-                }
-                @media (max-width: 480px) {
-                    .upgrade-modal-content { width: 95%; }
-                    .upgrade-modal-header { padding: 24px 20px 20px; }
-                    .upgrade-modal-body { padding: 32px 20px 24px; }
-                    .upgrade-modal-buttons { flex-direction: column; }
-                    .upgrade-modal-btn { width: 100%; justify-content: center; }
-                }
-            `;
-            document.head.appendChild(styleEl);
-        }
-
-        modal.innerHTML = `
-            <div class="upgrade-modal-content">
-                <div class="upgrade-modal-header">
-                    <div class="upgrade-modal-icon">🔒</div>
-                    <h2>Conteúdo Premium</h2>
-                </div>
-                <div class="upgrade-modal-body">
-                    <img id="upgrade-modal-thumb" class="upgrade-modal-thumbnail" src="" alt="" style="display:none;">
-                    <div id="upgrade-modal-content-title" class="upgrade-modal-title"></div>
-                    <p id="upgrade-modal-msg" class="upgrade-modal-msg"></p>
-                    <div class="upgrade-modal-plans">
-                        <span id="upgrade-plan-current" class="upgrade-plan-badge current"></span>
-                        <span class="upgrade-plan-arrow">→</span>
-                        <span id="upgrade-plan-required" class="upgrade-plan-badge required"></span>
-                    </div>
-                    <div class="upgrade-modal-buttons">
-                        <button id="upgrade-modal-cancel" class="upgrade-modal-btn cancel">
-                            Voltar
-                        </button>
-                        <button id="upgrade-modal-action" class="upgrade-modal-btn primary">
-                            <span>✨</span> Ver Planos
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(modal);
-
-        // Close on overlay click
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.style.display = 'none';
-                document.body.style.overflow = 'auto';
-            }
-        });
-
-        document.getElementById('upgrade-modal-cancel').addEventListener('click', () => {
-            modal.style.display = 'none';
-            document.body.style.overflow = 'auto';
-        });
-
-        document.getElementById('upgrade-modal-action').addEventListener('click', () => {
-            window.location.href = 'index.html';
-        });
+    // Remove existing modal to ensure fresh state
+    let existingModal = document.getElementById('upgrade-modal');
+    if (existingModal) {
+        existingModal.remove();
     }
 
-    // Update modal content
+    let modal = document.createElement('div');
+    modal.id = 'upgrade-modal';
+    modal.className = 'modal';
+    
+    // Inject styles
+    if (!document.getElementById('upgrade-modal-styles')) {
+        const styleEl = document.createElement('style');
+        styleEl.id = 'upgrade-modal-styles';
+        styleEl.textContent = `
+            #upgrade-modal {
+                position: fixed;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.85);
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 99999;
+                animation: upgradeModalFadeIn 0.3s ease;
+            }
+            @keyframes upgradeModalFadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            @keyframes upgradeModalSlideIn {
+                from { opacity: 0; transform: scale(0.9) translateY(20px); }
+                to { opacity: 1; transform: scale(1) translateY(0); }
+            }
+            .upgrade-modal-content {
+                max-width: 500px;
+                width: 92%;
+                background: linear-gradient(145deg, #1a1a2e 0%, #16213e 100%);
+                border-radius: 16px;
+                box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255,255,255,0.1);
+                overflow: hidden;
+                animation: upgradeModalSlideIn 0.4s ease;
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+            .upgrade-modal-header {
+                background: linear-gradient(135deg, #00a79e 0%, #007d77 100%);
+                padding: 24px 24px 20px;
+                text-align: center;
+            }
+            .upgrade-modal-icon {
+                font-size: 40px;
+                margin-bottom: 8px;
+            }
+            .upgrade-modal-header h2 {
+                margin: 0;
+                color: #fff;
+                font-size: 1.4rem;
+                font-weight: 700;
+            }
+            .upgrade-modal-body {
+                padding: 24px;
+                text-align: center;
+            }
+            .upgrade-modal-thumbnail {
+                width: 100px;
+                height: 60px;
+                object-fit: cover;
+                border-radius: 8px;
+                margin-bottom: 16px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            }
+            .upgrade-modal-title {
+                color: #fff;
+                font-size: 1rem;
+                font-weight: 600;
+                margin-bottom: 8px;
+            }
+            .upgrade-modal-msg {
+                color: #a0a0a0;
+                font-size: 0.9rem;
+                line-height: 1.5;
+                margin-bottom: 20px;
+            }
+            .upgrade-modal-plans-list {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                margin-bottom: 20px;
+            }
+            .upgrade-plan-option {
+                background: rgba(255, 255, 255, 0.05);
+                border: 2px solid rgba(255, 255, 255, 0.1);
+                border-radius: 12px;
+                padding: 14px 16px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                text-align: left;
+                position: relative;
+            }
+            .upgrade-plan-option:hover:not(.disabled-plan) {
+                border-color: rgba(0, 167, 158, 0.5);
+                background: rgba(0, 167, 158, 0.1);
+            }
+            .upgrade-plan-option.selected {
+                border-color: #00a79e;
+                background: rgba(0, 167, 158, 0.15);
+                box-shadow: 0 0 20px rgba(0, 167, 158, 0.2);
+            }
+            .upgrade-plan-option.disabled-plan {
+                opacity: 0.4;
+                cursor: not-allowed;
+            }
+            .upgrade-plan-option .current-badge {
+                position: absolute;
+                bottom: 8px;
+                right: 8px;
+                background: rgba(0, 0, 0, 0.45);
+                padding: 4px 8px;
+                border-radius: 10px;
+                font-size: 0.75rem;
+                color: #e6f7f3;
+                backdrop-filter: blur(4px);
+            }
+            .upgrade-plan-option.recommended::before {
+                content: '⭐ Recomendado';
+                position: absolute;
+                top: -10px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: linear-gradient(135deg, #00a79e, #00c4b8);
+                padding: 3px 10px;
+                border-radius: 20px;
+                font-size: 0.65rem;
+                color: #fff;
+                font-weight: 600;
+            }
+            .upgrade-plan-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 4px;
+            }
+            .upgrade-plan-name {
+                font-size: 1rem;
+                font-weight: 600;
+                color: #fff;
+            }
+            .upgrade-plan-price {
+                font-size: 0.95rem;
+                font-weight: 700;
+                color: #00a79e;
+            }
+            .upgrade-plan-features {
+                font-size: 0.8rem;
+                color: rgba(255,255,255,0.5);
+            }
+            .upgrade-modal-buttons {
+                display: flex;
+                gap: 10px;
+                margin-top: 16px;
+            }
+            .upgrade-modal-btn {
+                flex: 1;
+                padding: 12px 16px;
+                border-radius: 10px;
+                font-size: 0.9rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                border: none;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+            }
+            .upgrade-modal-btn.cancel {
+                background: rgba(255,255,255,0.08);
+                color: #aaa;
+                border: 1px solid rgba(255,255,255,0.1);
+            }
+            .upgrade-modal-btn.cancel:hover {
+                background: rgba(255,255,255,0.12);
+                color: #fff;
+            }
+            .upgrade-modal-btn.primary {
+                background: linear-gradient(135deg, #00a79e 0%, #00c4b8 100%);
+                color: #fff;
+                box-shadow: 0 4px 15px rgba(0, 167, 158, 0.3);
+            }
+            .upgrade-modal-btn.primary:hover:not(:disabled) {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(0, 167, 158, 0.4);
+            }
+            .upgrade-modal-btn.primary:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+                transform: none;
+            }
+            @media (max-width: 480px) {
+                .upgrade-modal-content { width: 95%; }
+                .upgrade-modal-body { padding: 20px 16px; }
+                .upgrade-modal-buttons { flex-direction: column; }
+                .upgrade-modal-btn { width: 100%; }
+            }
+        `;
+        document.head.appendChild(styleEl);
+    }
+
     const planNames = {
         'free': 'Gratuito',
         'basic': 'Básico',
-        'standard': 'Padrão',
         'premium': 'Premium'
+    };
+
+    const planPrices = {
+        'free': 'R$ 0',
+        'basic': 'R$ 19,90/mês',
+        'premium': 'R$ 39,90/mês'
+    };
+
+    const planFeatures = {
+        'free': 'Conteúdo limitado • 1 perfil • SD',
+        'basic': 'Todo conteúdo • 2 perfis • HD',
+        'premium': 'Todo conteúdo • 5 perfis • 4K • Downloads'
     };
 
     const reqPlan = (requiredPlan || 'basic').toString().toLowerCase();
     const curPlan = (currentPlan || 'free').toString().toLowerCase();
     const contentTitle = (content && content.title) || 'este conteúdo';
+    // Prefer banner when available for header background, fallback to thumbnail
+    const bannerUrl = (content && (content.bannerUrl || content.thumbnailUrl)) || '';
 
-    // Thumbnail
-    const thumbEl = document.getElementById('upgrade-modal-thumb');
-    if (content && (content.thumbnailUrl || content.bannerUrl)) {
-        thumbEl.src = content.thumbnailUrl || content.bannerUrl;
-        thumbEl.style.display = 'block';
-    } else {
-        thumbEl.style.display = 'none';
+    const planOrder = ['free', 'basic', 'premium'];
+    const ranks = { free: 0, basic: 1, premium: 2 };
+
+    const plansHtml = planOrder.map(planId => {
+        const isCurrent = planId === curPlan;
+        const isRecommended = planId === reqPlan && !isCurrent;
+        const isDisabled = ranks[planId] <= ranks[curPlan];
+        
+        return `
+            <div class="upgrade-plan-option ${isDisabled ? 'disabled-plan' : ''} ${isRecommended ? 'recommended' : ''}" 
+                 data-plan="${planId}">
+                ${isCurrent ? '<span class="current-badge">Seu plano</span>' : ''}
+                <div class="upgrade-plan-header">
+                    <span class="upgrade-plan-name">${planNames[planId]}</span>
+                    <span class="upgrade-plan-price">${planPrices[planId]}</span>
+                </div>
+                <div class="upgrade-plan-features">${planFeatures[planId]}</div>
+            </div>
+        `;
+    }).join('');
+
+    modal.innerHTML = `
+        <div class="upgrade-modal-content">
+            <div class="upgrade-modal-header"></div>
+            <div class="upgrade-modal-body">
+                ${bannerUrl ? '' : `<img class="upgrade-modal-thumbnail" src="${content && (content.thumbnailUrl || '')}" alt="">`}
+                <div class="upgrade-modal-title">${contentTitle}</div>
+                <p class="upgrade-modal-msg">Escolha um plano para assistir este conteúdo:</p>
+                <div class="upgrade-modal-plans-list">
+                    ${plansHtml}
+                </div>
+                <div class="upgrade-modal-buttons">
+                    <button id="upgrade-modal-cancel" class="upgrade-modal-btn cancel">Voltar</button>
+                    <button id="upgrade-modal-action" class="upgrade-modal-btn primary" disabled>
+                        <span>✨</span> Fazer Upgrade
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // If we have a banner, use it as the header background and remove small thumbnail
+    if (bannerUrl) {
+        const headerEl = modal.querySelector('.upgrade-modal-header');
+        if (headerEl) {
+            headerEl.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.35)), url('${bannerUrl}')`;
+            headerEl.style.backgroundSize = 'cover';
+            headerEl.style.backgroundPosition = 'center';
+        }
+        const thumbImg = modal.querySelector('.upgrade-modal-thumbnail');
+        if (thumbImg) thumbImg.remove();
     }
 
-    // Content title
-    document.getElementById('upgrade-modal-content-title').textContent = contentTitle;
+    // Close handlers
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+            document.body.style.overflow = 'auto';
+        }
+    });
 
-    // Message
-    document.getElementById('upgrade-modal-msg').textContent = 
-        `Este conteúdo está disponível apenas para assinantes do plano ${planNames[reqPlan] || reqPlan.toUpperCase()} ou superior. Faça upgrade agora e aproveite todo o catálogo!`;
+    document.getElementById('upgrade-modal-cancel').addEventListener('click', () => {
+        modal.remove();
+        document.body.style.overflow = 'auto';
+    });
 
-    // Plan badges
-    document.getElementById('upgrade-plan-current').textContent = planNames[curPlan] || curPlan.toUpperCase();
-    document.getElementById('upgrade-plan-required').textContent = planNames[reqPlan] || reqPlan.toUpperCase();
+    // Plan selection
+    let selectedPlan = null;
+    const actionBtn = document.getElementById('upgrade-modal-action');
 
-    modal.style.display = 'flex';
+    modal.querySelectorAll('.upgrade-plan-option').forEach(option => {
+        if (option.classList.contains('disabled-plan')) return;
+        
+        option.addEventListener('click', () => {
+            modal.querySelectorAll('.upgrade-plan-option').forEach(o => o.classList.remove('selected'));
+            option.classList.add('selected');
+            selectedPlan = option.dataset.plan;
+            actionBtn.disabled = false;
+        });
+    });
+
+    // Action button - upgrade subscription
+    actionBtn.addEventListener('click', async () => {
+        if (!selectedPlan) return;
+        
+        actionBtn.disabled = true;
+        actionBtn.innerHTML = '<span>⏳</span> Processando...';
+        
+        try {
+            await window.authModule.updateSubscription(selectedPlan);
+            
+            if (window.uiModule && window.uiModule.showToast) {
+                window.uiModule.showToast(`Plano atualizado para ${planNames[selectedPlan]}!`, 'success');
+            }
+            
+            modal.remove();
+            document.body.style.overflow = 'auto';
+            
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } catch (error) {
+            console.error('Erro ao atualizar plano:', error);
+            if (window.uiModule && window.uiModule.showToast) {
+                window.uiModule.showToast('Erro ao atualizar plano. Tente novamente.', 'error');
+            }
+            actionBtn.disabled = false;
+            actionBtn.innerHTML = '<span>✨</span> Fazer Upgrade';
+        }
+    });
+
     document.body.style.overflow = 'hidden';
 }
 

@@ -1345,7 +1345,7 @@
                             const required = (currentContent.subscriptionLevel || currentContent.subscription || 'free').toString().toLowerCase();
                             const userSub = await window.authModule.getUserSubscription();
                             const userPlan = (userSub && userSub.plan) ? userSub.plan.toString().toLowerCase() : 'free';
-                            const ranks = { free: 0, basic: 1, standard: 2, premium: 3 };
+                            const ranks = { free: 0, basic: 1, premium: 2 };
                             if ((ranks[userPlan] || 0) < (ranks[required] || 0)) {
                                 // Show upgrade prompt and stop playback setup
                                 if (window.uiModule && typeof window.uiModule.showUpgradeModal === 'function') {
@@ -1371,7 +1371,7 @@
                             const required = (currentContent.subscriptionLevel || currentContent.subscription || 'free').toString().toLowerCase();
                             const userSub = await window.authModule.getUserSubscription();
                             const userPlan = (userSub && userSub.plan) ? userSub.plan.toString().toLowerCase() : 'free';
-                            const ranks = { free: 0, basic: 1, standard: 2, premium: 3 };
+                            const ranks = { free: 0, basic: 1, premium: 2 };
                             if ((ranks[userPlan] || 0) < (ranks[required] || 0)) {
                                 if (window.uiModule && typeof window.uiModule.showUpgradeModal === 'function') {
                                     window.uiModule.showUpgradeModal(currentContent, required, userPlan);
