@@ -1355,14 +1355,50 @@
             return `${h}H${m.toString().padStart(2, '0')}`;
         }
 
-        // Open content (navigate to player)
-        function openContent(id, type) {
-            // Navigate using `type` and `id` query params expected by player.html
-            const url = new URL(window.location.href);
-            url.pathname = url.pathname.replace(/[^\/]*$/, 'player.html');
-            url.searchParams.set('type', type === 'series' ? 'series' : 'movie');
-            url.searchParams.set('id', id);
-            window.location.href = url.toString();
+        // Open content (navigate to player) with subscription check
+        async function openContent(id, type) {
+            try {
+                // Fetch content metadata (movie or series)
+                const content = await window.firestoreModule.getContentById(id, type);
+                if (!content) {
+                    alert('Conteúdo não encontrado');
+                    return;
+                }
+
+                const required = (content.subscriptionLevel || content.subscription || 'free').toString().toLowerCase();
+
+                // Map plan ranks for comparison
+                const ranks = { free: 0, basic: 1, standard: 2, premium: 3 };
+
+                // Get current user subscription (from user record)
+                const userSub = await window.authModule.getUserSubscription();
+                const userPlan = (userSub && userSub.plan) ? userSub.plan.toString().toLowerCase() : 'free';
+
+                // If user's plan is sufficient, navigate to player
+                if ((ranks[userPlan] || 0) >= (ranks[required] || 0)) {
+                    const url = new URL(window.location.href);
+                    url.pathname = url.pathname.replace(/[^\/]*$/, 'player.html');
+                    url.searchParams.set('type', type === 'series' ? 'series' : 'movie');
+                    url.searchParams.set('id', id);
+                    window.location.href = url.toString();
+                    return;
+                }
+
+                // Otherwise show upgrade prompt/modal
+                showUpgradeModal(content, required, userPlan);
+            } catch (err) {
+                console.error('Erro ao abrir conteúdo:', err);
+                alert('Erro ao abrir conteúdo. Tente novamente.');
+            }
+        }
+
+        // Wrapper to use global upgrade modal (implemented in app-core)
+        function showUpgradeModal(content, requiredPlan, currentPlan) {
+            if (window.uiModule && typeof window.uiModule.showUpgradeModal === 'function') {
+                return window.uiModule.showUpgradeModal(content, requiredPlan, currentPlan);
+            }
+            // Fallback
+            alert(`Este conteúdo requer o plano ${requiredPlan.toUpperCase()}. Atualize seu plano para assistir.`);
         }
 
         // Search functionality

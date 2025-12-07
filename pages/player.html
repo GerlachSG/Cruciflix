@@ -1340,12 +1340,51 @@
                     currentContent = await window.firestoreModule.getMovieById(contentId);
                     console.log('📽️ Filme carregado:', currentContent);
                     if (currentContent) {
+                        // Check subscription before starting playback
+                        try {
+                            const required = (currentContent.subscriptionLevel || currentContent.subscription || 'free').toString().toLowerCase();
+                            const userSub = await window.authModule.getUserSubscription();
+                            const userPlan = (userSub && userSub.plan) ? userSub.plan.toString().toLowerCase() : 'free';
+                            const ranks = { free: 0, basic: 1, standard: 2, premium: 3 };
+                            if ((ranks[userPlan] || 0) < (ranks[required] || 0)) {
+                                // Show upgrade prompt and stop playback setup
+                                if (window.uiModule && typeof window.uiModule.showUpgradeModal === 'function') {
+                                    window.uiModule.showUpgradeModal(currentContent, required, userPlan);
+                                } else {
+                                    alert(`Este conteúdo requer o plano ${required.toUpperCase()}. Atualize seu plano para assistir.`);
+                                }
+                                showLoading(false);
+                                return;
+                            }
+                        } catch (e) {
+                            console.warn('Erro ao verificar assinatura:', e);
+                        }
+
                         setVideo(currentContent);
                     }
                 } else if (contentType === 'series') {
                     currentContent = await window.firestoreModule.getSeriesById(contentId);
                     console.log('📺 Série carregada:', currentContent);
                     if (currentContent) {
+                        // Check subscription before allowing playback
+                        try {
+                            const required = (currentContent.subscriptionLevel || currentContent.subscription || 'free').toString().toLowerCase();
+                            const userSub = await window.authModule.getUserSubscription();
+                            const userPlan = (userSub && userSub.plan) ? userSub.plan.toString().toLowerCase() : 'free';
+                            const ranks = { free: 0, basic: 1, standard: 2, premium: 3 };
+                            if ((ranks[userPlan] || 0) < (ranks[required] || 0)) {
+                                if (window.uiModule && typeof window.uiModule.showUpgradeModal === 'function') {
+                                    window.uiModule.showUpgradeModal(currentContent, required, userPlan);
+                                } else {
+                                    alert(`Este conteúdo requer o plano ${required.toUpperCase()}. Atualize seu plano para assistir.`);
+                                }
+                                showLoading(false);
+                                return;
+                            }
+                        } catch (e) {
+                            console.warn('Erro ao verificar assinatura:', e);
+                        }
+
                         document.getElementById('episodes-btn').style.display = 'block';
                         await loadSeriesEpisodes();
                         console.log('📋 Episódios carregados:', episodes);

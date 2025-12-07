@@ -1263,15 +1263,37 @@
             return `${mins}:${secs.toString().padStart(2, '0')}`;
         }
 
-        function playContent(content) {
-            if (typeof content === 'string') {
-                content = JSON.parse(content);
+        async function playContent(content) {
+            try {
+                if (typeof content === 'string') {
+                    content = JSON.parse(content);
+                }
+
+                // Normalize type
+                const contentType = (content.type || '').toLowerCase();
+                const type = contentType === 'series' ? 'series' : 'movie';
+
+                // Fetch content metadata and user subscription
+                const contentMeta = await window.firestoreModule.getContentById(content.id, type);
+                const required = (contentMeta?.subscriptionLevel || contentMeta?.subscription || 'free').toString().toLowerCase();
+                const ranks = { free: 0, basic: 1, standard: 2, premium: 3 };
+                const userSub = await window.authModule.getUserSubscription();
+                const userPlan = (userSub && userSub.plan) ? userSub.plan.toString().toLowerCase() : 'free';
+
+                if ((ranks[userPlan] || 0) >= (ranks[required] || 0)) {
+                    window.location.href = `player.html?type=${type}&id=${content.id}`;
+                } else {
+                    // Use global UI helper if available
+                    if (window.uiModule && typeof window.uiModule.showUpgradeModal === 'function') {
+                        window.uiModule.showUpgradeModal(contentMeta, required, userPlan);
+                    } else {
+                        alert(`Este conteúdo requer o plano ${required.toUpperCase()}. Atualize seu plano para assistir.`);
+                    }
+                }
+            } catch (err) {
+                console.error('Erro ao reproduzir conteúdo:', err);
+                alert('Erro ao abrir player. Tente novamente.');
             }
-            
-            // Navigate to player - check both uppercase and lowercase type
-            const contentType = (content.type || '').toLowerCase();
-            const type = contentType === 'series' ? 'series' : 'movie';
-            window.location.href = `player.html?type=${type}&id=${content.id}`;
         }
 
         function showInfo(content) {
