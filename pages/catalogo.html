@@ -431,8 +431,8 @@
         /* Content Grid */
         .content-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 24px;
         }
 
         @media (min-width: 1200px) {
@@ -448,7 +448,7 @@
             overflow: hidden;
             cursor: pointer;
             transition: all 0.3s ease;
-            aspect-ratio: 2/3;
+            aspect-ratio: 16/9;
             background: #1a1a1a;
         }
 
@@ -458,15 +458,17 @@
             box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         }
 
-        .content-card img {
+        .card-thumbnail {
             width: 100%;
-            height: 100%;
-            object-fit: cover;
+            aspect-ratio: 16/9;
+            border-radius: 8px 8px 0 0;
+            background-size: cover;
+            background-position: center;
             transition: transform 0.3s;
         }
 
-        .content-card:hover img {
-            transform: scale(1.1);
+        .content-card:hover .card-thumbnail {
+            transform: scale(1.03);
         }
 
         .card-overlay {
@@ -475,7 +477,7 @@
             left: 0;
             right: 0;
             background: linear-gradient(transparent, rgba(0,0,0,0.95));
-            padding: 60px 12px 12px;
+            padding: 28px 12px 12px;
             transform: translateY(100%);
             transition: transform 0.3s;
         }
@@ -1036,6 +1038,7 @@
         // State
         let allContent = [];
         let filteredContent = [];
+        let isKidsProfile = false;
         let currentTypeFilter = 'all';
         let pageSelectedTags = [];
         let searchTerm = '';
@@ -1058,16 +1061,25 @@
             // Load profile avatar
             loadProfileAvatar();
 
+            // Determine current profile and kids mode
+            const currentProfile = window.authModule?.getCurrentProfile?.();
+            isKidsProfile = !!currentProfile?.isKids;
+            document.body.classList.toggle('kids-mode', isKidsProfile);
+
             // Show admin link if admin
             if (authState.isAdmin) {
                 document.getElementById('admin-link').style.display = 'flex';
             }
 
-            // Check URL for filters
+            // Check URL for filters (accept both ?type= and legacy ?filter= from dashboard)
             const urlParams = new URLSearchParams(window.location.search);
-            const urlType = urlParams.get('type');
+            let urlType = urlParams.get('type') || urlParams.get('filter');
             const urlSearch = urlParams.get('q');
-            
+
+            // normalize dashboard's "movies" -> "movie"
+            if (urlType === 'movies') urlType = 'movie';
+            if (urlType === 'films') urlType = 'movie';
+
             if (urlType) {
                 currentTypeFilter = urlType;
                 updateTypeFilterButtons();
@@ -1192,11 +1204,12 @@
 
         // Update counts
         function updateCounts() {
-            const movies = allContent.filter(c => c.type === 'movie');
-            const series = allContent.filter(c => c.type === 'series');
-            const kids = allContent.filter(c => c.isKidsSafe);
+            const visible = isKidsProfile ? allContent.filter(c => c.isKidsSafe) : allContent;
+            const movies = visible.filter(c => c.type === 'movie');
+            const series = visible.filter(c => c.type === 'series');
+            const kids = visible.filter(c => c.isKidsSafe);
 
-            document.getElementById('count-all').textContent = allContent.length;
+            document.getElementById('count-all').textContent = visible.length;
             document.getElementById('count-movies').textContent = movies.length;
             document.getElementById('count-series').textContent = series.length;
             document.getElementById('count-kids').textContent = kids.length;
@@ -1205,6 +1218,11 @@
         // Apply all filters
         function applyFilters() {
             let result = [...allContent];
+
+            // If kids profile, restrict to kids-safe content
+            if (isKidsProfile) {
+                result = result.filter(c => c.isKidsSafe);
+            }
 
             // Type filter
             if (currentTypeFilter === 'movie') {
@@ -1283,17 +1301,16 @@
             container.innerHTML = filteredContent.map(item => createContentCard(item)).join('');
         }
 
-        // Create content card HTML
+        // Create content card HTML (use background thumbnail for consistent 16:9)
         function createContentCard(item) {
-            const thumbnail = item.thumbnailUrl || 'https://via.placeholder.com/300x450/1a1a1a/666?text=Sem+Imagem';
+            const thumbnail = item.thumbnailUrl || 'https://via.placeholder.com/1280x720/1a1a1a/666?text=Sem+Imagem';
             const isMovie = item.type === 'movie';
             const typeLabel = isMovie ? 'Filme' : 'Série';
             const typeClass = isMovie ? '' : 'series';
-            
+
             return `
                 <div class="content-card" onclick="openContent('${item.id}', '${item.type}')">
-                    <img src="${thumbnail}" alt="${item.title}" loading="lazy">
-                    <span class="card-type ${typeClass}">${typeLabel}</span>
+                    <div class="card-thumbnail" style="background-image: url('${thumbnail}')"></div>
                     ${item.rating ? `<span class="card-rating">${item.rating}</span>` : ''}
                     ${item.isKidsSafe ? `<span class="card-kids">Kids</span>` : ''}
                     <div class="card-play">
@@ -1303,7 +1320,7 @@
                         <h3 class="card-title">${item.title}</h3>
                         <div class="card-meta">
                             <span>${item.year || 'N/A'}</span>
-                            ${item.duration ? `<span>${formatDuration(item.duration)}</span>` : ''}
+                            ${item.duration || item.durationMinutes ? `<span>${formatDuration(minutesFrom(item))}</span>` : ''}
                             ${!isMovie && item.totalSeasons ? `<span>${item.totalSeasons} temp.</span>` : ''}
                         </div>
                     </div>
@@ -1311,12 +1328,31 @@
             `;
         }
 
-        // Format duration
+        // Normalize duration to minutes and format
+        function minutesFrom(itemOrValue) {
+            if (itemOrValue === undefined || itemOrValue === null) return null;
+            // if an object with durationMinutes provided, use it
+            if (typeof itemOrValue === 'object') {
+                const obj = itemOrValue;
+                if (obj.durationMinutes !== undefined && obj.durationMinutes !== null) return obj.durationMinutes;
+                if (obj.duration !== undefined && obj.duration !== null) return minutesFrom(obj.duration);
+                return null;
+            }
+
+            // if a number, decide whether it's seconds or minutes
+            const v = Number(itemOrValue);
+            if (isNaN(v)) return null;
+            // Heuristic: values greater than 500 are likely seconds (e.g. 2863 -> 47m)
+            if (v > 500) return Math.floor(v / 60);
+            return Math.ceil(v);
+        }
+
         function formatDuration(minutes) {
-            if (!minutes) return '';
+            if (minutes === undefined || minutes === null) return '';
             const h = Math.floor(minutes / 60);
-            const m = minutes % 60;
-            return h > 0 ? `${h}h${m}min` : `${m}min`;
+            const m = Math.floor(minutes % 60);
+            if (h === 0) return `${minutes} min`;
+            return `${h}H${m.toString().padStart(2, '0')}`;
         }
 
         // Open content (navigate to player)

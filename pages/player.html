@@ -106,6 +106,8 @@
             background: rgba(255,255,255,0.2);
         }
 
+        /* Helper note: formatDuration helper moved to the page's script scope */
+
         /* Center Play Button */
         .center-play {
             position: absolute;
@@ -1243,6 +1245,28 @@
         let autoplayInterval;
         let isAutoplayActive = false;
 
+        // Normalize durations and format
+        function minutesFrom(objOrValue) {
+            if (objOrValue === undefined || objOrValue === null) return null;
+            if (typeof objOrValue === 'object') {
+                if (objOrValue.durationMinutes !== undefined && objOrValue.durationMinutes !== null) return objOrValue.durationMinutes;
+                if (objOrValue.duration !== undefined && objOrValue.duration !== null) return minutesFrom(objOrValue.duration);
+                return null;
+            }
+            const v = Number(objOrValue);
+            if (isNaN(v)) return null;
+            if (v > 500) return Math.floor(v / 60); // treat as seconds
+            return Math.ceil(v);
+        }
+
+        function formatDuration(minutes) {
+            if (minutes === undefined || minutes === null) return '';
+            const h = Math.floor(minutes / 60);
+            const m = Math.floor(minutes % 60);
+            if (h === 0) return `${minutes} min`;
+            return `${h}H${m.toString().padStart(2, '0')}`;
+        }
+
         // Progress dragging state (global so updateProgress can honor it)
         let isProgressDragging = false;
         let dragPercent = 0;
@@ -1373,10 +1397,13 @@
             document.getElementById('series-year').textContent = currentContent.year || '';
             document.getElementById('series-description').textContent = currentContent.description || '';
             
-            // Rating badge
+            // Rating badge (normalize class without '+' to match CSS rules)
             const ratingBadge = document.getElementById('series-rating-badge');
-            ratingBadge.textContent = currentContent.rating || 'L';
-            ratingBadge.className = `series-rating rating-${currentContent.rating || 'L'}`;
+            const rawRating = currentContent.rating || 'L';
+            const displayRating = rawRating;
+            const classRating = rawRating === 'L' ? 'L' : rawRating.toString().replace(/\+/g, '').replace(/\s+/g, '');
+            ratingBadge.textContent = displayRating;
+            ratingBadge.className = `series-rating rating-${classRating}`;
             
             // Seasons count
             const seasons = [...new Set(episodes.map(e => e.season))];
@@ -1424,7 +1451,7 @@
                         <div class="episode-info-large">
                             <div class="episode-header">
                                 <span class="episode-num">${ep.episodeNumber}. ${ep.title}</span>
-                                <span class="episode-duration">${ep.duration || '?'} min</span>
+                                <span class="episode-duration">${formatDuration(minutesFrom(ep) || minutesFrom(ep.duration))}</span>
                             </div>
                             <p class="episode-desc">${ep.description || 'Sem descrição disponível.'}</p>
                             ${progress > 0 ? `
@@ -1583,7 +1610,7 @@
                         <div class="episode-info">
                             <div class="episode-number">Episódio ${ep.episodeNumber}</div>
                             <div class="episode-name">${ep.title}</div>
-                            <div class="episode-duration">${ep.duration || '?'} min</div>
+                                        <div class="episode-duration">${formatDuration(minutesFrom(ep) || minutesFrom(ep.duration))}</div>
                             <div class="episode-progress">
                                 <div class="episode-progress-fill" style="width: ${ep.watchProgress || 0}%"></div>
                             </div>

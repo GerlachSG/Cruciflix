@@ -912,3 +912,22 @@ p {
 .auth-logo span {
     color: var(--color-secondary);
 }
+
+/* Kids visual mode overrides */
+body.kids-mode {
+    --color-primary: #00d9ff;
+    --color-secondary: #ffd54f;
+}
+
+body.kids-mode .main-header {
+    background: linear-gradient(90deg, rgba(0,217,255,0.12), rgba(255,213,79,0.06));
+}
+
+body.kids-mode .logo {
+    color: #00d9ff;
+}
+
+body.kids-mode .btn-play {
+    background: #00d9ff;
+    color: #001;
+}

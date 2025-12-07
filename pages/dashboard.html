@@ -808,7 +808,7 @@
                 <span class="hero-match" id="hero-match">98% relevante</span>
                 <span id="hero-year">2024</span>
                 <span class="hero-rating" id="hero-rating">L</span>
-                <span id="hero-duration">2h 15min</span>
+                <span id="hero-duration"></span>
             </div>
             <p class="hero-description" id="hero-description">
                 Carregando descrição...
@@ -976,6 +976,7 @@
         let currentUser = null;
         let featuredContent = null;
         let selectedAvatar = null;
+        let isKidsProfile = false; // global flag used across functions
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
@@ -1000,6 +1001,10 @@
                     window.location.href = 'select-profile.html';
                     return;
                 }
+
+                // Determine kids profile and apply visual mode
+                isKidsProfile = !!currentProfile?.isKids;
+                document.body.classList.toggle('kids-mode', isKidsProfile);
 
                 // Initialize UI
                 initializeUI();
@@ -1060,8 +1065,14 @@
                     window.firestoreModule.getAllTags()
                 ]);
 
+                // Use global isKidsProfile flag set earlier
+                function filterVisible(arr) {
+                    if (!Array.isArray(arr)) return [];
+                    return isKidsProfile ? arr.filter(c => c.isKidsSafe) : arr;
+                }
+
                 // Set hero (featured content)
-                const allContent = [...movies, ...series].filter(c => c.bannerUrl);
+                const allContent = [...filterVisible(movies), ...filterVisible(series)].filter(c => c.bannerUrl);
                 if (allContent.length > 0) {
                     featuredContent = allContent[Math.floor(Math.random() * allContent.length)];
                     setHeroContent(featuredContent);
@@ -1076,12 +1087,14 @@
                 // Load my list
                 await loadMyList();
 
-                // Populate rows
-                populateRow('movies-slider', movies);
-                populateRow('series-slider', series);
+                // Populate rows (apply kids filter when needed)
+                const visibleMovies = filterVisible(movies);
+                const visibleSeries = filterVisible(series);
+                populateRow('movies-slider', visibleMovies);
+                populateRow('series-slider', visibleSeries);
                 
-                // Kids content
-                const kidsContent = [...movies, ...series].filter(c => c.isKidsSafe);
+                // Kids content (still populate kids row if any kids content exists)
+                const kidsContent = [...filterVisible(movies), ...filterVisible(series)].filter(c => c.isKidsSafe);
                 if (kidsContent.length > 0) {
                     populateRow('kids-slider', kidsContent);
                     document.getElementById('kids-row').style.display = 'block';
@@ -1092,7 +1105,7 @@
                 // Dynamic tag rows
                 const tagRows = document.getElementById('tag-rows');
                 for (const tag of tags.slice(0, 5)) {
-                    const tagContent = [...movies, ...series].filter(c => 
+                    const tagContent = [...filterVisible(movies), ...filterVisible(series)].filter(c => 
                         c.tags && c.tags.includes(tag.name)
                     );
                     if (tagContent.length >= 3) {
@@ -1114,13 +1127,41 @@
                 console.error('Error loading content:', error);
             }
         }
+        // Normalize duration to minutes (prefer durationMinutes) and format for display
+        function minutesFromContent(content) {
+            if (!content) return null;
+            if (content.durationMinutes !== undefined && content.durationMinutes !== null) return content.durationMinutes;
+            if (content.duration !== undefined && content.duration !== null) {
+                const v = Number(content.duration);
+                if (isNaN(v)) return null;
+                if (v > 500) return Math.floor(v / 60); // treat as seconds
+                return Math.ceil(v);
+            }
+            return null;
+        }
+
+        function formatDurationMinutes(minutes) {
+            if (minutes === undefined || minutes === null) return '';
+            const h = Math.floor(minutes / 60);
+            const m = Math.floor(minutes % 60);
+            if (h === 0) return `${minutes} min`;
+            return `${h}H${m.toString().padStart(2, '0')}`;
+        }
 
         function setHeroContent(content) {
             document.getElementById('hero-bg').style.backgroundImage = `url('${content.bannerUrl || content.thumbnailUrl || ''}')`;
             document.getElementById('hero-title').textContent = content.title;
             document.getElementById('hero-year').textContent = content.year || '2024';
-            document.getElementById('hero-duration').textContent = content.duration ? `${content.duration} min` : '';
+            const mins = minutesFromContent(content);
+            document.getElementById('hero-duration').textContent = mins ? formatDurationMinutes(mins) : '';
             document.getElementById('hero-description').textContent = content.description || '';
+            // Rating badge (normalize class without '+')
+            const heroRatingEl = document.getElementById('hero-rating');
+            const rawRating = content.rating || 'L';
+            const displayRating = rawRating;
+            const classRating = rawRating === 'L' ? 'L' : rawRating.toString().replace(/\+/g, '').replace(/\s+/g, '');
+            heroRatingEl.textContent = displayRating;
+            heroRatingEl.className = `hero-rating rating-${classRating}`;
             
             const tagsContainer = document.getElementById('hero-tags');
             tagsContainer.innerHTML = (content.tags || []).slice(0, 4).map(tag => 
@@ -1140,6 +1181,8 @@
                 
                 for (const item of progress.slice(0, 10)) {
                     if (item.content) {
+                        // If in kids profile, skip non-kids content
+                        if (isKidsProfile && !item.content.isKidsSafe) continue;
                         const card = createContinueCard(item.content, item.watchTime, item.content.duration);
                         slider.appendChild(card);
                     }
@@ -1151,7 +1194,8 @@
             const watchlist = await window.firestoreModule.getWatchlist();
             if (watchlist && watchlist.length > 0) {
                 document.getElementById('mylist-row').style.display = 'block';
-                populateRow('mylist-slider', watchlist);
+                const visibleWatchlist = isKidsProfile ? watchlist.filter(item => item.isKidsSafe) : watchlist;
+                populateRow('mylist-slider', visibleWatchlist);
             }
         }
 
