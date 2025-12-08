@@ -229,7 +229,8 @@
                 manageGrid.appendChild(manageCard);
             });
 
-            // Add "+" button if less than 5 profiles
+            // Add "+" button - always show if less than max profiles (5)
+            // The actual limit check happens in openProfileModal()
             if (profiles.length < 5) {
                 const addCard = document.createElement('div');
                 addCard.className = 'profile-card add-profile-card';
@@ -334,7 +335,74 @@
         };
 
         // Open profile modal (create or edit)
-        function openProfileModal(profile = null) {
+        // Plan limits for profiles
+        const PLAN_PROFILE_LIMITS = {
+            'free': 1,
+            'basic': 2,
+            'premium': 5
+        };
+
+        async function getProfileLimit() {
+            try {
+                const userSub = await window.authModule.getUserSubscription();
+                const plan = (userSub && userSub.plan) ? userSub.plan.toString().toLowerCase() : 'free';
+                return { plan, limit: PLAN_PROFILE_LIMITS[plan] || 1 };
+            } catch (e) {
+                console.error('Error getting subscription:', e);
+                return { plan: 'free', limit: 1 };
+            }
+        }
+
+        function showProfileUpgradeModal(currentPlan, currentCount) {
+            // Determine required plan based on what user needs
+            let requiredPlan = 'basic';
+            if (currentCount >= 2) {
+                requiredPlan = 'premium';
+            }
+
+            // Create custom content for the profiles context (no banner/thumbnail for profile limit)
+            const profileContent = {
+                title: 'Limite de Perfis Atingido',
+                bannerUrl: null,
+                thumbnailUrl: null,
+                hideHeader: true
+            };
+            
+            if (window.uiModule && typeof window.uiModule.showUpgradeModal === 'function') {
+                // Show the upgrade modal
+                window.uiModule.showUpgradeModal(profileContent, requiredPlan, currentPlan);
+                
+                // After modal is created, customize the message for profiles
+                setTimeout(() => {
+                    const msgEl = document.getElementById('upgrade-modal')?.querySelector('.upgrade-modal-msg');
+                    if (msgEl) {
+                        const planNames = { 'free': 'Gratuito', 'basic': 'Básico', 'premium': 'Premium' };
+                        const limits = { 'free': 1, 'basic': 2, 'premium': 5 };
+                        msgEl.textContent = `Seu plano ${planNames[currentPlan]} permite apenas ${limits[currentPlan]} perfil(s). Faça upgrade para criar mais perfis:`;
+                    }
+                }, 50);
+            } else {
+                console.error('showUpgradeModal not available');
+                alert(`Seu plano ${currentPlan.toUpperCase()} permite apenas ${PLAN_PROFILE_LIMITS[currentPlan]} perfil(s). Faça upgrade para adicionar mais perfis.`);
+            }
+        }
+
+        async function openProfileModal(profile = null) {
+            // If creating a new profile, check plan limits first
+            if (!profile) {
+                try {
+                    const { plan, limit } = await getProfileLimit();
+                    const currentProfiles = await window.authModule.getProfiles();
+                    
+                    if (currentProfiles.length >= limit) {
+                        showProfileUpgradeModal(plan, currentProfiles.length);
+                        return;
+                    }
+                } catch (err) {
+                    // Continue to open modal even if check fails
+                }
+            }
+
             const modal = document.getElementById('profile-modal');
             const title = document.getElementById('profile-modal-title');
             const form = document.getElementById('profile-form');

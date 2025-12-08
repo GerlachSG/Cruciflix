@@ -1322,7 +1322,6 @@
                             ...data.data,
                             lastWatched: firebase.firestore.FieldValue.serverTimestamp()
                         }, { merge: true });
-                    console.log('✅ Progresso pendente sincronizado');
                 }
                 localStorage.removeItem('cruciflix_pending_progress');
             } catch (e) {
@@ -1334,11 +1333,8 @@
             showLoading(true);
 
             try {
-                console.log('🎬 Carregando conteúdo:', contentType, contentId);
-                
                 if (contentType === 'movie') {
                     currentContent = await window.firestoreModule.getMovieById(contentId);
-                    console.log('📽️ Filme carregado:', currentContent);
                     if (currentContent) {
                         // Check subscription before starting playback
                         try {
@@ -1364,7 +1360,6 @@
                     }
                 } else if (contentType === 'series') {
                     currentContent = await window.firestoreModule.getSeriesById(contentId);
-                    console.log('📺 Série carregada:', currentContent);
                     if (currentContent) {
                         // Check subscription before allowing playback
                         try {
@@ -1387,7 +1382,6 @@
 
                         document.getElementById('episodes-btn').style.display = 'block';
                         await loadSeriesEpisodes();
-                        console.log('📋 Episódios carregados:', episodes);
                         
                         // Load user interactions (like, love, watchlist)
                         await loadUserInteractions();

@@ -95,20 +95,17 @@ async function initializeAdmin() {
     // Registrar callbacks para atualização automática quando dados mudarem
     if (window.firestoreModule && window.firestoreModule.onDataUpdate) {
         window.firestoreModule.onDataUpdate('movies', (newMovies) => {
-            console.log('🔄 Filmes atualizados em background, recarregando tabela...');
             displayMoviesTable(newMovies);
             loadDashboardStats(); // Atualiza estatísticas também
         });
         
         window.firestoreModule.onDataUpdate('series', (newSeries) => {
-            console.log('🔄 Séries atualizadas em background, recarregando tabela...');
             allSeries = newSeries;
             displaySeriesTable(newSeries);
             loadDashboardStats();
         });
         
         window.firestoreModule.onDataUpdate('tags', (newTags) => {
-            console.log('🔄 Tags atualizadas em background, recarregando...');
             allTags = newTags;
             displayTagsGrid();
         });
@@ -1330,7 +1327,6 @@ async function handleUploadForm(e) {
                         videoCollection: contentType === 'EPISODE' ? 'episodes' : 'movies',
                         videoDocId: result.id
                     });
-                    console.log('✅ Updated transcode job with videoDocPath:', videoDocPath);
                 }
             } catch (jobErr) {
                 console.warn('Could not update transcode job with videoDocPath:', jobErr);

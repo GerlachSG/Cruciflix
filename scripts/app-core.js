@@ -25,7 +25,6 @@ try {
     auth = firebase.auth();
     db = firebase.firestore();
     storage = firebase.storage();
-    console.log('✅ Firebase initialized successfully');
 } catch (error) {
     console.error('❌ Firebase initialization error:', error);
     alert('Erro ao conectar com o Firebase. Verifique a configuração.');
@@ -75,7 +74,6 @@ async function registerUser(email, password, displayName) {
         // verifies their email. The verification page will call createUserRecordIfMissing
         // once `user.emailVerified === true`.
 
-        console.log('✅ User registered successfully:', user.uid);
         return { success: true, user: user };
     } catch (error) {
         console.error('❌ Registration error:', error);
@@ -87,7 +85,6 @@ async function registerUser(email, password, displayName) {
 async function loginUser(email, password) {
     try {
         const userCredential = await firebaseAuth.signInWithEmailAndPassword(email, password);
-        console.log('✅ User logged in successfully:', userCredential.user.uid);
         return { success: true, user: userCredential.user };
     } catch (error) {
         console.error('❌ Login error:', error);
@@ -99,7 +96,6 @@ async function loginUser(email, password) {
 async function logoutUser() {
     try {
         await firebaseAuth.signOut();
-        console.log('✅ User logged out successfully');
         return { success: true };
     } catch (error) {
         console.error('❌ Logout error:', error);
@@ -167,7 +163,6 @@ async function requireAdmin(redirectUrl = 'dashboard.html') {
 async function resetPassword(email) {
     try {
         await firebaseAuth.sendPasswordResetEmail(email);
-        console.log('✅ Password reset email sent');
         return { success: true };
     } catch (error) {
         console.error('❌ Password reset error:', error);
@@ -186,7 +181,6 @@ async function updateUserProfile(updates) {
         }
         await firebaseDB.collection('users').doc(user.uid).update(updates);
 
-        console.log('✅ Profile updated successfully');
         return { success: true };
     } catch (error) {
         console.error('❌ Profile update error:', error);
@@ -242,7 +236,6 @@ async function createProfile(profileData) {
         const docRef = await firebaseDB.collection('users').doc(user.uid)
             .collection('profiles').add(newProfile);
 
-        console.log('✅ Profile created:', docRef.id);
         return { success: true, id: docRef.id };
     } catch (error) {
         console.error('❌ Error creating profile:', error);
@@ -259,7 +252,6 @@ async function updateProfile(profileId, updates) {
         await firebaseDB.collection('users').doc(user.uid)
             .collection('profiles').doc(profileId).update(updates);
 
-        console.log('✅ Profile updated:', profileId);
         return { success: true };
     } catch (error) {
         console.error('❌ Error updating profile:', error);
@@ -282,7 +274,6 @@ async function deleteProfile(profileId) {
         await firebaseDB.collection('users').doc(user.uid)
             .collection('profiles').doc(profileId).delete();
 
-        console.log('✅ Profile deleted:', profileId);
         return { success: true };
     } catch (error) {
         console.error('❌ Error deleting profile:', error);
@@ -454,7 +445,6 @@ async function updateSubscription(planId) {
             }
         }, { merge: true });
 
-        console.log('✅ Subscription updated to:', planId);
         return { success: true };
     } catch (error) {
         console.error('❌ Error updating subscription:', error);
@@ -650,15 +640,19 @@ function hideLoading() {
 
 // --- UPGRADE PROMPT ---
 function showUpgradeModal(content, requiredPlan, currentPlan) {
-    // Remove existing modal to ensure fresh state
-    let existingModal = document.getElementById('upgrade-modal');
-    if (existingModal) {
-        existingModal.remove();
-    }
+    try {
+        // Remove existing modal to ensure fresh state
+        let existingModal = document.getElementById('upgrade-modal');
+        if (existingModal) {
+            existingModal.remove();
+        }
 
     let modal = document.createElement('div');
     modal.id = 'upgrade-modal';
     modal.className = 'modal';
+
+    // Check if we should hide the header (for profile limit modal)
+    const hideHeader = content && content.hideHeader === true;
     
     // Inject styles
     if (!document.getElementById('upgrade-modal-styles')) {
@@ -671,9 +665,9 @@ function showUpgradeModal(content, requiredPlan, currentPlan) {
                 top: 0;
                 width: 100%;
                 height: 100%;
-                background: rgba(0, 0, 0, 0.85);
-                backdrop-filter: blur(8px);
-                -webkit-backdrop-filter: blur(8px);
+                background: rgba(0, 0, 0, 0.65);
+                backdrop-filter: blur(6px);
+                -webkit-backdrop-filter: blur(6px);
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -910,11 +904,11 @@ function showUpgradeModal(content, requiredPlan, currentPlan) {
 
     modal.innerHTML = `
         <div class="upgrade-modal-content">
-            <div class="upgrade-modal-header"></div>
+            ${hideHeader ? '' : '<div class="upgrade-modal-header"></div>'}
             <div class="upgrade-modal-body">
-                ${bannerUrl ? '' : `<img class="upgrade-modal-thumbnail" src="${content && (content.thumbnailUrl || '')}" alt="">`}
+                ${!hideHeader && bannerUrl ? '' : (!hideHeader && content && content.thumbnailUrl ? `<img class="upgrade-modal-thumbnail" src="${content.thumbnailUrl}" alt="">` : '')}
                 <div class="upgrade-modal-title">${contentTitle}</div>
-                <p class="upgrade-modal-msg">Escolha um plano para assistir este conteúdo:</p>
+                <p class="upgrade-modal-msg">${hideHeader ? 'Você atingiu o limite de perfis do seu plano. Faça upgrade para criar mais perfis:' : 'Escolha um plano para assistir este conteúdo:'}</p>
                 <div class="upgrade-modal-plans-list">
                     ${plansHtml}
                 </div>
@@ -931,7 +925,7 @@ function showUpgradeModal(content, requiredPlan, currentPlan) {
     document.body.appendChild(modal);
 
     // If we have a banner, use it as the header background and remove small thumbnail
-    if (bannerUrl) {
+    if (bannerUrl && !hideHeader) {
         const headerEl = modal.querySelector('.upgrade-modal-header');
         if (headerEl) {
             headerEl.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.35)), url('${bannerUrl}')`;
@@ -1001,6 +995,9 @@ function showUpgradeModal(content, requiredPlan, currentPlan) {
     });
 
     document.body.style.overflow = 'hidden';
+    } catch (err) {
+        // Silent fail
+    }
 }
 
 // --- NAVIGATION ---

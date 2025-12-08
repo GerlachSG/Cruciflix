@@ -650,7 +650,7 @@
                         try {
                             await firebase.firestore().collection('users').doc(user.uid).delete();
                         } catch (e) {
-                            console.log('No user doc to delete or error:', e);
+                            // No user doc to delete or error
                         }
                         
                         // Delete the Firebase Auth account

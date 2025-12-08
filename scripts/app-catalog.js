@@ -111,10 +111,7 @@ async function revalidateInBackground(type, fetchFn, cacheKey) {
             JSON.stringify(freshData.map(d => d.updatedAt || d.createdAt)) !== JSON.stringify(cachedData.map(d => d.updatedAt || d.createdAt));
         
         if (hasChanges) {
-            console.log(`🔄 Cache revalidated - ${type} data updated!`);
             notifyUpdate(type, freshData);
-        } else {
-            console.log(`✅ Cache valid - ${type} unchanged`);
         }
     } catch (e) {
         console.warn(`Background revalidation failed for ${type}:`, e);
@@ -140,7 +137,6 @@ async function getAllTags(forceRefresh = false) {
         if (!forceRefresh) {
             const cached = getCacheStale(CACHE_CONFIG.TAGS_KEY);
             if (cached) {
-                console.log('📦 Using cached tags');
                 // Revalidar em background
                 setTimeout(() => revalidateInBackground('tags', fetchTagsFromDB, CACHE_CONFIG.TAGS_KEY), 100);
                 return cached;
@@ -161,7 +157,6 @@ async function fetchTagsFromDB(forceRefresh = false) {
     snapshot.forEach(doc => {
         tags.push({ id: doc.id, ...doc.data() });
     });
-    console.log(`✅ Fetched ${tags.length} tags from DB`);
     
     // Store in cache
     setCache(CACHE_CONFIG.TAGS_KEY, tags);
@@ -186,7 +181,6 @@ async function createTag(tagData) {
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
-        console.log('✅ Tag created:', docRef.id);
         // Clear tags cache
         clearCache(CACHE_CONFIG.TAGS_KEY);
         return { success: true, id: docRef.id };
@@ -205,7 +199,6 @@ async function addTag(tagName, category = 'general') {
 async function updateTag(tagId, updates) {
     try {
         await firebaseDB.collection('tags').doc(tagId).update(updates);
-        console.log('✅ Tag updated:', tagId);
         // Clear tags cache
         clearCache(CACHE_CONFIG.TAGS_KEY);
         return { success: true };
@@ -219,7 +212,6 @@ async function updateTag(tagId, updates) {
 async function deleteTag(tagId) {
     try {
         await firebaseDB.collection('tags').doc(tagId).delete();
-        console.log('✅ Tag deleted:', tagId);
         // Clear tags cache
         clearCache(CACHE_CONFIG.TAGS_KEY);
         return { success: true };
@@ -240,7 +232,6 @@ async function getAllMovies(forceRefresh = false) {
         if (!forceRefresh) {
             const cached = getCacheStale(CACHE_CONFIG.MOVIES_KEY);
             if (cached) {
-                console.log('📦 Using cached movies');
                 // Revalidar em background
                 setTimeout(() => revalidateInBackground('movies', fetchMoviesFromDB, CACHE_CONFIG.MOVIES_KEY), 100);
                 return cached;
@@ -265,7 +256,6 @@ async function fetchMoviesFromDB(forceRefresh = false) {
             movies.push({ ...data, id: doc.id, type: CONTENT_TYPES.MOVIE });
         }
     });
-    console.log(`✅ Fetched ${movies.length} movies from DB`);
     
     // Store in cache
     setCache(CACHE_CONFIG.MOVIES_KEY, movies);
@@ -316,7 +306,6 @@ async function addMovie(movieData) {
         };
 
         const docRef = await firebaseDB.collection('movies').add(newMovie);
-        console.log('✅ Movie added:', docRef.id);
         // Clear movies cache
         clearCache(CACHE_CONFIG.MOVIES_KEY);
         return { success: true, id: docRef.id };
@@ -330,7 +319,6 @@ async function addMovie(movieData) {
 async function updateMovie(movieId, updates) {
     try {
         await firebaseDB.collection('movies').doc(movieId).update(updates);
-        console.log('✅ Movie updated:', movieId);
         // Clear movies cache
         clearCache(CACHE_CONFIG.MOVIES_KEY);
         return { success: true };
@@ -344,7 +332,6 @@ async function updateMovie(movieId, updates) {
 async function deleteMovie(movieId) {
     try {
         await firebaseDB.collection('movies').doc(movieId).delete();
-        console.log('✅ Movie deleted:', movieId);
         // Clear movies cache
         clearCache(CACHE_CONFIG.MOVIES_KEY);
         return { success: true };
@@ -365,7 +352,6 @@ async function getAllSeries(forceRefresh = false) {
         if (!forceRefresh) {
             const cached = getCacheStale(CACHE_CONFIG.SERIES_KEY);
             if (cached) {
-                console.log('📦 Using cached series');
                 // Revalidar em background
                 setTimeout(() => revalidateInBackground('series', fetchSeriesFromDB, CACHE_CONFIG.SERIES_KEY), 100);
                 return cached;
@@ -386,7 +372,6 @@ async function fetchSeriesFromDB(forceRefresh = false) {
     snapshot.forEach(doc => {
         series.push({ ...doc.data(), id: doc.id, type: CONTENT_TYPES.SERIES });
     });
-    console.log(`✅ Fetched ${series.length} series from DB`);
     
     // Store in cache
     setCache(CACHE_CONFIG.SERIES_KEY, series);
@@ -397,18 +382,12 @@ async function fetchSeriesFromDB(forceRefresh = false) {
 // Get series by ID
 async function getSeriesById(seriesId) {
     try {
-        console.log('🔍 Buscando série com ID:', seriesId);
-        console.log('📁 firebaseDB disponível:', !!firebaseDB);
-        
         const doc = await firebaseDB.collection('series').doc(seriesId).get();
-        console.log('📄 Documento existe:', doc.exists);
         
         if (doc.exists) {
             const data = { ...doc.data(), id: doc.id, type: CONTENT_TYPES.SERIES };
-            console.log('✅ Série encontrada:', data.title);
             return data;
         }
-        console.warn('⚠️ Série não encontrada para ID:', seriesId);
         return null;
     } catch (error) {
         console.error('❌ Error fetching series:', error);
@@ -440,7 +419,6 @@ async function addSeries(seriesData) {
         };
 
         const docRef = await firebaseDB.collection('series').add(newSeries);
-        console.log('✅ Series added:', docRef.id);
         // Clear series cache
         clearCache(CACHE_CONFIG.SERIES_KEY);
         return { success: true, id: docRef.id };
@@ -454,7 +432,6 @@ async function addSeries(seriesData) {
 async function updateSeries(seriesId, updates) {
     try {
         await firebaseDB.collection('series').doc(seriesId).update(updates);
-        console.log('✅ Series updated:', seriesId);
         // Clear series cache
         clearCache(CACHE_CONFIG.SERIES_KEY);
         return { success: true };
@@ -478,12 +455,10 @@ async function deleteSeries(seriesId) {
                 batch.delete(doc.ref);
             });
             await batch.commit();
-            console.log(`✅ Deleted ${episodesSnapshot.size} episodes for series:`, seriesId);
         }
 
         // Delete series
         await firebaseDB.collection('series').doc(seriesId).delete();
-        console.log('✅ Series deleted:', seriesId);
         // Clear series cache
         clearCache(CACHE_CONFIG.SERIES_KEY);
         return { success: true };
@@ -500,8 +475,6 @@ async function deleteSeries(seriesId) {
 // Get all episodes of a series
 async function getEpisodes(seriesId) {
     try {
-        console.log('🔍 Buscando episódios para série:', seriesId);
-        
         const snapshot = await firebaseDB.collection('episodes')
             .where('seriesId', '==', seriesId)
             .get();
@@ -517,7 +490,6 @@ async function getEpisodes(seriesId) {
             return a.episodeNumber - b.episodeNumber;
         });
         
-        console.log(`✅ Encontrados ${episodes.length} episódios`);
         return episodes;
     } catch (error) {
         console.error('❌ Error fetching episodes:', error);
@@ -589,7 +561,6 @@ async function addEpisode(episodeData) {
         // Update episode count on series
         await updateSeriesEpisodeCount(episodeData.seriesId);
         
-        console.log('✅ Episode added:', docRef.id);
         return { success: true, id: docRef.id };
     } catch (error) {
         console.error('❌ Error adding episode:', error);
@@ -601,7 +572,6 @@ async function addEpisode(episodeData) {
 async function updateEpisode(episodeId, updates) {
     try {
         await firebaseDB.collection('episodes').doc(episodeId).update(updates);
-        console.log('✅ Episode updated:', episodeId);
         return { success: true };
     } catch (error) {
         console.error('❌ Error updating episode:', error);
@@ -622,7 +592,6 @@ async function deleteEpisode(episodeId) {
             await updateSeriesEpisodeCount(episode.seriesId);
         }
         
-        console.log('✅ Episode deleted:', episodeId);
         return { success: true };
     } catch (error) {
         console.error('❌ Error deleting episode:', error);
@@ -774,7 +743,6 @@ async function addToWatchlist(contentId, contentType) {
             addedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
-        console.log('✅ Added to watchlist:', contentId);
         return { success: true };
     } catch (error) {
         console.error('❌ Error adding to watchlist:', error);
@@ -792,7 +760,6 @@ async function removeFromWatchlist(contentId) {
         const watchlistId = `${user.uid}_${profile.id}_${contentId}`;
         await firebaseDB.collection('watchlist').doc(watchlistId).delete();
 
-        console.log('✅ Removed from watchlist:', contentId);
         return { success: true };
     } catch (error) {
         console.error('❌ Error removing from watchlist:', error);
@@ -870,8 +837,6 @@ async function saveProgress(contentId, watchTime, completed = false, episodeId =
             completed: completed,
             lastWatched: firebase.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
-
-        console.log('✅ Progress saved:', progressId);
     } catch (error) {
         console.error('❌ Error saving progress:', error);
     }
@@ -958,7 +923,6 @@ async function addComment(videoId, content) {
             approved: false
         });
 
-        console.log('✅ Comment added (pending approval)');
         return { success: true };
     } catch (error) {
         console.error('❌ Error adding comment:', error);
@@ -1012,7 +976,6 @@ async function approveComment(commentId) {
         await firebaseDB.collection('comments').doc(commentId).update({
             approved: true
         });
-        console.log('✅ Comment approved:', commentId);
         return { success: true };
     } catch (error) {
         console.error('❌ Error approving comment:', error);
@@ -1024,7 +987,6 @@ async function approveComment(commentId) {
 async function deleteComment(commentId) {
     try {
         await firebaseDB.collection('comments').doc(commentId).delete();
-        console.log('✅ Comment deleted:', commentId);
         return { success: true };
     } catch (error) {
         console.error('❌ Error deleting comment:', error);
@@ -1047,7 +1009,6 @@ async function searchVideos(searchTerm) {
             video.description.toLowerCase().includes(searchLower)
         );
 
-        console.log(`✅ Found ${results.length} videos matching "${searchTerm}"`);
         return results;
     } catch (error) {
         console.error('❌ Error searching videos:', error);
@@ -1148,7 +1109,6 @@ function initPlayer(videoElementId, hlsUrl, videoId) {
         hlsPlayer.attachMedia(currentVideoElement);
 
         hlsPlayer.on(Hls.Events.MANIFEST_PARSED, function () {
-            console.log('✅ HLS manifest loaded');
             loadSavedProgress(videoId);
         });
 
@@ -1171,7 +1131,6 @@ function initPlayer(videoElementId, hlsUrl, videoId) {
         // Safari native HLS support
         currentVideoElement.src = hlsUrl;
         currentVideoElement.addEventListener('loadedmetadata', function () {
-            console.log('✅ Native HLS loaded');
             loadSavedProgress(videoId);
         });
     } else {
@@ -1190,7 +1149,6 @@ async function loadSavedProgress(videoId) {
     const progress = await getProgress(videoId);
     if (progress && progress.watchTime > 0 && !progress.completed) {
         currentVideoElement.currentTime = progress.watchTime;
-        console.log(`✅ Resumed from ${progress.watchTime}s`);
     }
 }
 
